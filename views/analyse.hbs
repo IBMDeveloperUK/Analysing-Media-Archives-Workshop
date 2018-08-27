@@ -1,0 +1,29 @@
+<h2>Bucket Objects</h2>
+
+<table>
+
+    <thead>
+        <tr>
+            <td>Name</td>
+            <td>Processed?</td>
+            <td>Transcripted?</td>
+            <td>Frames Classified?</td>
+            <td>Taxonomy Extracted?</td>
+            <td>Trigger Analysis</td>
+        </tr>
+    </thead>
+
+    <tbody>
+        {{#each item}}
+        <tr>
+            <td>{{item.Key}}</td>
+            <td>{{item.exists}}</td>
+            <td>{{item.transcribed}}</td>
+            <td>{{item.frames_extracted}}</td>
+            <td>{{item.used_in_taxonomy}}</td>
+            <td><a>Analyse</a></td>
+        </tr>
+        {{/each}}
+    </tbody>
+
+</table>
