@@ -140,6 +140,26 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
 
                                         analysis.push(frameClassification);
                                         
+                                        const audioTranscription = analyse.audio(data.Body)
+                                            .then(transcriptionData => {
+                                                transcriptionData.parent = document.uuid;
+                                                return database.add(transcriptionData, 'transcripts')
+                                                    .then(function(){
+                                                        return transcriptionData;
+                                                    })
+                                                    .catch(err => {
+                                                        debug('DB error (transcripts):', err);
+                                                    })
+                                                ;
+                                            })
+                                            .catch(err => {
+                                                debug('Transcription err:', err);
+                                                debug(err);
+                                            })
+                                        ;
+                                        
+                                        analysis.push(audioTranscription);
+
                                         return Promise.all(analysis);
 
                                     })
