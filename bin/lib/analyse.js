@@ -4,6 +4,7 @@ const uuid = require('uuid/v4');
 const spawn = require(`child_process`).spawn;
 const extractKeyFrames = require('extract-keyframes');
 const ffmpeg = require('ffmpeg-static');
+const rimraf = require('rimraf');
 
 // Helpful variables
 const WORKING_DIRECTORY = process.env.WORKING_DIRECTORY || '/tmp';
@@ -196,6 +197,22 @@ function extractAudioFromVideoAndTranscribeTheContent(file){
                             .then(transcriptionData => {
 
                                 resolve(transcriptionData);
+
+                                rimraf(OUTPUT_DESTINATION, {},(err) => {
+                                    if(err){
+                                        debug(`There was an error unlinking '${OUTPUT_DESTINATION}'`, err);
+                                    } else {
+                                        debug(`Directory '${OUTPUT_DESTINATION}' successfully unlinked`);
+                                    }
+                                });
+
+                                rimraf(INPUT_DESTINATION, {},(err) => {
+                                    if(err){
+                                        debug(`There was an error unlinking '${INPUT_DESTINATION}'`, err);
+                                    } else {
+                                        debug(`Directory '${INPUT_DESTINATION}' successfully unlinked`);
+                                    }
+                                });
 
                             })
                             .catch(err => {
