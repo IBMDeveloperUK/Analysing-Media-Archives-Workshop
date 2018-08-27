@@ -48,4 +48,40 @@ main{
     width: 100%;
     display: flex;
     max-width: 1280px;
+    flex-direction: column;
+    box-sizing: border-box;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+main table{
+    border-spacing: 0;
+    background-color: white;
+}
+
+main table thead{
+    background: #37495f;
+    color: white;
+}
+
+main table td{
+    padding: 1em;
+    border-bottom: 1px solid #e6e6e6;
+}
+
+main table tbody tr td:first-child{
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+main table tbody tr td:not( :nth-child(1) ){
+    text-align: right;
+}
+
+main table tbody tr td[href]{
+    cursor: pointer;
 }

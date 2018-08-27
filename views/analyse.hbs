@@ -16,12 +16,12 @@
     <tbody>
         {{#each item}}
         <tr>
-            <td>{{item.Key}}</td>
-            <td>{{item.exists}}</td>
-            <td>{{item.transcribed}}</td>
-            <td>{{item.frames_extracted}}</td>
-            <td>{{item.used_in_taxonomy}}</td>
-            <td><a>Analyse</a></td>
+            <td>{{this.Key}}</td>
+            <td>{{this.exists}}</td>
+            <td>{{this.transcribed}}</td>
+            <td>{{this.frames_extracted}}</td>
+            <td>{{this.used_in_taxonomy}}</td>
+            <td><a href="#">Analyse</a></td>
         </tr>
         {{/each}}
     </tbody>

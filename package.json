@@ -8,6 +8,7 @@
   "dependencies": {
     "aws-sdk": "^2.300.0",
     "body-parser": "~1.18.2",
+    "cloudant": "^1.10.0-NOTICE",
     "cookie-parser": "~1.4.3",
     "debug": "^2.6.9",
     "dotenv": "^6.0.0",
