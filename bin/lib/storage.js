@@ -54,15 +54,14 @@ function getObjectFromS3(filename, bucket = process.env.COS_DEFAULT_BUCKET){
 
 }
 
-function putObjectInS3Bucket(filename, data, tags, bucket = process.env.COS_DEFAULT_BUCKET){
+function putObjectInS3Bucket(filename, data, bucket = process.env.COS_DEFAULT_BUCKET){
 	
 	return new Promise( (resolve, reject) => {
 
 		S3.putObject({
 			Bucket : bucket,
 			Key : filename,
-            Body : data,
-            Tagging : Object.keys(tags).map(key => { return `${key}=${tags[key]}` }).join('&')
+            Body : data
 		}, err => {
 
 			if(err){

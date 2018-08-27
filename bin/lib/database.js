@@ -20,6 +20,7 @@ function queryTheDatabaseForADcoumentOrDocuments(params, database = DEFAULT_DB_N
                 debug('Database err: (query)', err);
                 reject(err);
             } else {
+                debug('Result:', result);
                 resolve(result.docs)
             }
         });
@@ -37,6 +38,7 @@ function updateAnItemInTheDatabase(document, database = DEFAULT_DB_NAME){
                 debug('Database err (update):', err);
                 reject(err);
             } else {
+                debug('Result:', result);
                 resolve(result);
             }
         });
