@@ -32,12 +32,22 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
     storage.check(objectName)
         .then(exists => {
             if(exists){
-                database.get()
+                
+                database.query({
+                        "selector": {
+                            "name": {
+                            "$eq": objectName
+                            }
+                        },
+                    }, 'index')
+                    .then(result => {
+                        res.json(result);
+                    })
+                ;
+
             }
         })
     ;
-
-    res.end();
 
 });
 

@@ -10,7 +10,7 @@ var cloudant = Cloudant({
 //Edit this variable value to change name of database.
 const DEFAULT_DB_NAME = process.env.DEFAULT_DB_NAME;
 
-function queryTheDatabaseForADcoumentOrDocuments(token, params, database = DEFAULT_DB_NAME){
+function queryTheDatabaseForADcoumentOrDocuments(params, database = DEFAULT_DB_NAME){
     const db = cloudant.db.use(database);
 
     return new Promise( (resolve, reject) => {
@@ -67,7 +67,7 @@ function removeADocumentFromTheDatabase(documentID, documentRevision, database =
 }
 
 module.exports = {
-    query : getANumberOfItemsFromTheDatabase,
+    query : queryTheDatabaseForADcoumentOrDocuments,
     add : updateAnItemInTheDatabase,
     update : updateAnItemInTheDatabase,
     delete : removeADocumentFromTheDatabase
