@@ -115,20 +115,14 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                         }
 
                         // Cleanup existing records
-                        return database.query({
-                                "selector": {
-                                    "parent": {
-                                        "$eq": document.uuid
-                                    }
-                                }
-                            }, 'frames')
-                            .then(documents => {
-                                debug(documents);
+                        return Promise.all( [ database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'frames'), database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'transcripts') ],  )
+                            .then(results => {
+                                debug(results[0]);
 
-                                const filesToDelete = storage.deleteMany( documents.map(document => { return { Key: `${document.uuid}.jpg` } }) );
-                                const deleteRecords = new Promise( (resolve, reject) => {
+                                const keyFramesToDelete = storage.deleteMany( results[0].map(document => { return { Key: `${document.uuid}.jpg` } }) );
+                                const deleteKeyFrameRecordsAndTranscripts = new Promise( (resolve, reject) => {
 
-                                    const deleteActions = documents.map( (document, idx) => {
+                                    const deleteKeyframeRecordsActions = results[0].map( (document, idx) => {
                                         return new Promise( (resolve, reject) => {
 
                                             setTimeout(function(){
@@ -143,7 +137,28 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                                         
                                     });
 
-                                    Promise.all(deleteActions)
+                                    Promise.all(deleteKeyframeRecordsActions)
+                                        .then(function(){
+
+                                            const deleteTranscriptActions = results[1].map( (transcriptDocument, idx) => {
+
+                                                return new Promise( (resolve, reject) => {
+
+                                                    setTimeout(function(){
+                                                        database.delete(transcriptDocument._id, transcriptDocument._rev, 'transcripts')
+                                                            .then(function(){
+                                                                resolve();
+                                                            })
+                                                            .catch(err => reject(err))
+                                                    }, DATABASE_THROTTLE_TIME * idx);
+        
+                                                });
+
+                                            } );
+
+                                            return Promise.all(deleteTranscriptActions);
+
+                                        })
                                         .then(function(){
                                             resolve();
                                         })
@@ -154,7 +169,8 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                                     ;
 
                                 });
-                                return Promise.all( [filesToDelete, deleteRecords] )
+
+                                return Promise.all( [ keyFramesToDelete, deleteKeyFrameRecordsAndTranscripts ] )
 
                             })
                             .then(function(){
