@@ -10,13 +10,13 @@ AWS.config.update({
 
 const S3 = new AWS.S3();
 
-function checkObjectIsInS3(filename, bucket = process.env.COS_DEFAULT_BUCKET){
+function checkObjectIsInS3(key, bucket = process.env.COS_DEFAULT_BUCKET){
 
 	return new Promise( (resolve, reject) => {
 
 		S3.headObject({
 			Bucket : bucket,
-			Key : filename
+			Key : key
 		}, (err, data) => {
 
 			if(err && err.code === 'NotFound'){
@@ -33,13 +33,13 @@ function checkObjectIsInS3(filename, bucket = process.env.COS_DEFAULT_BUCKET){
 
 }
 
-function getObjectFromS3(filename, bucket = process.env.COS_DEFAULT_BUCKET){
+function getObjectFromS3(key, bucket = process.env.COS_DEFAULT_BUCKET){
 	
 	return new Promise( (resolve, reject) => {
 
 		S3.getObject({
 			Bucket : bucket,
-			Key : filename		
+			Key : key		
 		}, (err, data) => {
 
 			if(err){
@@ -54,13 +54,13 @@ function getObjectFromS3(filename, bucket = process.env.COS_DEFAULT_BUCKET){
 
 }
 
-function putObjectInS3Bucket(filename, data, bucket = process.env.COS_DEFAULT_BUCKET){
+function putObjectInS3Bucket(key, data, bucket = process.env.COS_DEFAULT_BUCKET){
 	
 	return new Promise( (resolve, reject) => {
 
 		S3.putObject({
 			Bucket : bucket,
-			Key : filename,
+			Key : key,
             Body : data
 		}, err => {
 
@@ -94,9 +94,64 @@ function listObjectsInS3Bucket(bucket = process.env.COS_DEFAULT_BUCKET){
     });
 }
 
+function deleteAnObjectFromAnS3Bucket(key, bucket = process.env.COS_DEFAULT_BUCKET){
+
+	return new Promise( (resolve, reject) => {
+
+		S3.deleteObject({
+			Bucket: bucket,
+			Key: key
+		}, function(err, data) {
+
+			if(err){
+				debug('Delete object err:', err);
+				reject(err);
+			} else {
+				resolve();
+			}
+
+		});
+
+	});
+
+}
+
+function deleteManyObjectsFromAnS3Bucket(keys, bucket = process.env.COS_DEFAULT_BUCKET){
+	
+	if(keys.length === 0){
+		return Promise.resolve();
+	} else {
+
+		return new Promise( (resolve, reject) => {
+	
+			S3.deleteObjects({
+				Bucket: bucket,
+				Delete: {
+					Objects: keys
+				}
+			}, function(err, data) {
+	
+				if(err){
+					debug('Delete object(s) err:', err);
+					reject(err);
+				} else {
+					resolve();
+				}
+	
+			});
+	
+		});
+		
+	}
+
+
+}
+
 module.exports = {
 	check : checkObjectIsInS3,
 	get : getObjectFromS3,
     put : putObjectInS3Bucket,
-    list : listObjectsInS3Bucket
+	list : listObjectsInS3Bucket,
+	delete : deleteAnObjectFromAnS3Bucket,
+	deleteMany : deleteManyObjectsFromAnS3Bucket
 }

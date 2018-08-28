@@ -7,6 +7,8 @@ const storage = require(`${__dirname}/../bin/lib/storage`);
 const database = require(`${__dirname}/../bin/lib/database`);
 const analyse = require(`${__dirname}/../bin/lib/analyse`);
 
+const DATABASE_THROTTLE_TIME = 200;
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
     res.render('index', { title: 'Express' });
@@ -71,107 +73,158 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                             }
                         }
 
-                        return database.add(document, 'index')
-                            .then(function(){
+                        // Cleanup existing records
+                        return database.query({
+                                "selector": {
+                                    "parent": {
+                                        "$eq": document.uuid
+                                    }
+                                }
+                            }, 'frames')
+                            .then(documents => {
+                                debug(documents);
 
-                                return storage.get(objectName)
-                                    .then(data => {
-                                        debug(data);
+                                const filesToDelete = storage.deleteMany( documents.map(document => { return { Key: `${document.uuid}.jpg` } }) );
+                                const deleteRecords = new Promise( (resolve, reject) => {
 
-                                        // Tell the client that the good work is underway
-                                        res.json({
-                                            status : "ok",
-                                            message : `Beginning analysis for '${objectName}'`
+                                    const deleteActions = documents.map( (document, idx) => {
+                                        return new Promise( (resolve, reject) => {
+
+                                            setTimeout(function(){
+                                                database.delete(document._id, document._rev, 'frames')
+                                                    .then(function(){
+                                                        resolve();
+                                                    })
+                                                    .catch(err => reject(err))
+                                            }, DATABASE_THROTTLE_TIME * idx);
+
                                         });
+                                        
+                                    });
 
-                                        const analysis = [];
+                                    Promise.all(deleteActions)
+                                        .then(function(){
+                                            resolve();
+                                        })
+                                        .catch(err => {
+                                            debug('Delete records err:', err);
+                                            reject(err);
+                                        })
+                                    ;
 
-                                        const frameClassification = analyse.frames(data.Body)
-                                            .then(frames => {
-                                                debug(frames);
+                                });
+                                return Promise.all( [filesToDelete, deleteRecords] )
 
-                                                const S = frames.map( (frame, idx) => {
+                            })
+                            .then(function(){
+                                debug('Clean up done');
 
-                                                    return new Promise( (resolve, reject) => {
+                                return database.add(document, 'index')
+                                    .then(function(){
 
-                                                        const dataOperations = [];
-                                                        
-                                                        const frameData = Object.assign({}, frame);
-                                                        
-                                                        frameData.parent = document.uuid;
-                                                        frameData.uuid = uuid();
-                                                        delete frameData.image;
-    
-                                                        const saveFrame = storage.put(`${frameData.uuid}.jpg`, frame.image, 'cos-frames');
-                                                        const saveClassifications = new Promise( (resolveA, reject) => {
-                                                            
-                                                            (function(frameData){
-    
-                                                                setTimeout(function(){
-                                                                    database.add(frameData, 'frames')
-                                                                        .then(function(){
-                                                                            resolveA();
-                                                                        })
-                                                                    ;
-                                                                }, 150 * idx);
-    
-                                                            })(frameData);
-                                                            
-                                                        });
-    
-                                                        dataOperations.push(saveFrame);
-                                                        dataOperations.push(saveClassifications);
-                                                        debug('dataOperations:', dataOperations);
-    
-                                                        Promise.all(dataOperations)
-                                                            .then(function(){
-                                                                resolve( frameData );
-                                                            })
-                                                        ;
+                                        return storage.get(objectName)
+                                            .then(data => {
+                                                debug(data);
 
-                                                    });
-
+                                                // Tell the client that the good work is underway
+                                                res.json({
+                                                    status : "ok",
+                                                    message : `Beginning analysis for '${objectName}'`
                                                 });
 
-                                                return Promise.all(S);
+                                                const analysis = [];
 
-                                            })
-                                        ;
+                                                const frameClassification = analyse.frames(data.Body)
+                                                    .then(frames => {
+                                                        debug(frames);
 
-                                        analysis.push(frameClassification);
-                                        
-                                        const audioTranscription = analyse.audio(data.Body)
-                                            .then(transcriptionData => {
-                                                transcriptionData.parent = document.uuid;
-                                                return database.add(transcriptionData, 'transcripts')
-                                                    .then(function(){
-                                                        return transcriptionData;
-                                                    })
-                                                    .catch(err => {
-                                                        debug('DB error (transcripts):', err);
+                                                        const S = frames.map( (frame, idx) => {
+
+                                                            return new Promise( (resolve, reject) => {
+
+                                                                const dataOperations = [];
+                                                                
+                                                                const frameData = Object.assign({}, frame);
+                                                                
+                                                                frameData.parent = document.uuid;
+                                                                frameData.uuid = uuid();
+                                                                delete frameData.image;
+            
+                                                                const saveFrame = storage.put(`${frameData.uuid}.jpg`, frame.image, 'cos-frames');
+                                                                const saveClassifications = new Promise( (resolveA, reject) => {
+                                                                    
+                                                                    (function(frameData){
+            
+                                                                        setTimeout(function(){
+                                                                            database.add(frameData, 'frames')
+                                                                                .then(function(){
+                                                                                    resolveA();
+                                                                                })
+                                                                            ;
+                                                                        }, DATABASE_THROTTLE_TIME * idx);
+            
+                                                                    })(frameData);
+                                                                    
+                                                                });
+            
+                                                                dataOperations.push(saveFrame);
+                                                                dataOperations.push(saveClassifications);
+                                                                debug('dataOperations:', dataOperations);
+            
+                                                                Promise.all(dataOperations)
+                                                                    .then(function(){
+                                                                        resolve( frameData );
+                                                                    })
+                                                                ;
+
+                                                            });
+
+                                                        });
+
+                                                        return Promise.all(S);
+
                                                     })
                                                 ;
-                                            })
-                                            .catch(err => {
-                                                debug('Transcription err:', err);
-                                                debug(err);
+
+                                                analysis.push(frameClassification);
+                                                
+                                                const audioTranscription = analyse.audio(data.Body)
+                                                    .then(transcriptionData => {
+                                                        transcriptionData.parent = document.uuid;
+                                                        return database.add(transcriptionData, 'transcripts')
+                                                            .then(function(){
+                                                                return transcriptionData;
+                                                            })
+                                                            .catch(err => {
+                                                                debug('DB error (transcripts):', err);
+                                                            })
+                                                        ;
+                                                    })
+                                                    .catch(err => {
+                                                        debug('Transcription err:', err);
+                                                        debug(err);
+                                                    })
+                                                ;
+                                                
+                                                analysis.push(audioTranscription);
+
+                                                return Promise.all(analysis);
+
                                             })
                                         ;
-                                        
-                                        analysis.push(audioTranscription);
-
-                                        return Promise.all(analysis);
-
                                     })
                                 ;
+
                             })
-                            .then(function(data){
-                                debug('Done.');
-                                debug(data);
+                            .catch(err => {
+                                debug('Dependents error (keyframes)', err);
                             })
                         ;
                         
-
+                    })
+                    .then(function(data){
+                        debug('All Done.');
+                        debug(data);
                     })
                     .catch(err => {
                         debug('ERR:', err);

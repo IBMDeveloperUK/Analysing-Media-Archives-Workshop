@@ -53,7 +53,7 @@ function removeADocumentFromTheDatabase(documentID, documentRevision, database =
     
     return new Promise( (resolve, reject) => {
 
-        db.destroy(docUniqueId, docRevNum, function(err, body, header) {
+        db.destroy(documentID, documentRevision, function(err, body, header) {
             
             if(err){
                 debug('Database err (remove):', err);
