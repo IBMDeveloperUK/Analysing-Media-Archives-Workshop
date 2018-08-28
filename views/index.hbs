@@ -12,15 +12,15 @@
 
     <div id="resultsWrapper">
     
-        <div id="transcriptions" class="resultsList">
-            <h3>Transcriptions</h3>
+        <div id="frames" class="resultsList">
+            <h3>Keyframes</h3>
             <ol>
                 <li></li>
             </ol>
         </div>
 
-        <div id="frames" class="resultsList">
-            <h3>Keyframes</h3>
+        <div id="transcriptions" class="resultsList">
+            <h3>Transcriptions</h3>
             <ol>
                 <li></li>
             </ol>
@@ -37,6 +37,7 @@
         'use strict';
 
         const searchForm = document.querySelector('#search');
+        const framesContainer = document.querySelector('#resultsContainer #frames');
 
         searchForm.addEventListener('submit', function(e){
             
@@ -61,6 +62,19 @@
                 })
                 .then(function(response){
                     console.log(response);
+                    const data = response.data;
+                    
+                    const framesList = framesContainer.querySelector('ol')
+                    framesList.innerHTML = "";
+
+                    Object.keys(data).forEach(key => {
+
+                        const HTML = data[key].frames.map(frame => {
+                            return `<li><img src="/keyframe/${frame.uuid}.jpg" /></li>`
+                        }).join('');
+                        framesList.innerHTML += HTML;
+                    });
+
                 })
                 .catch(function(err){
                     console.log('Search err:', err);

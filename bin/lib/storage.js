@@ -54,6 +54,15 @@ function getObjectFromS3(key, bucket = process.env.COS_DEFAULT_BUCKET){
 
 }
 
+function getObjectWithStreamFromS3(key, bucket = process.env.COS_DEFAULT_BUCKET){
+	
+	return S3.getObject({
+		Bucket : bucket,
+		Key : key		
+	}).createReadStream();
+
+}
+
 function putObjectInS3Bucket(key, data, bucket = process.env.COS_DEFAULT_BUCKET){
 	
 	return new Promise( (resolve, reject) => {
@@ -141,7 +150,7 @@ function deleteManyObjectsFromAnS3Bucket(keys, bucket = process.env.COS_DEFAULT_
 			});
 	
 		});
-		
+
 	}
 
 
@@ -150,6 +159,7 @@ function deleteManyObjectsFromAnS3Bucket(keys, bucket = process.env.COS_DEFAULT_
 module.exports = {
 	check : checkObjectIsInS3,
 	get : getObjectFromS3,
+	getStream : getObjectWithStreamFromS3,
     put : putObjectInS3Bucket,
 	list : listObjectsInS3Bucket,
 	delete : deleteAnObjectFromAnS3Bucket,

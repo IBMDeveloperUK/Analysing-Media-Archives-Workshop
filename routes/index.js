@@ -378,6 +378,11 @@ router.post('/search', (req, res, next) => {
         })
     ;
 
+});
+
+router.get('/keyframe/:ObjectKey', (req, res, next) => {
+
+    storage.getStream(req.params.ObjectKey, 'cos-frames').pipe(res);
 
 });
 
