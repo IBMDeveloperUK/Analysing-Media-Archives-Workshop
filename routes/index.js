@@ -2,6 +2,7 @@ const debug = require('debug')('routes:index');
 const express = require('express');
 const router = express.Router();
 const uuid = require('uuid/v4');
+const convertSeconds = require('convert-seconds')
 
 const storage = require(`${__dirname}/../bin/lib/storage`);
 const database = require(`${__dirname}/../bin/lib/database`);
@@ -360,8 +361,16 @@ router.post('/search', (req, res, next) => {
 
                 result.transcript.chunks.filter(chunk => {
                     debug(chunk);
-                    return chunk.text.indexOf(phrase) > -1;
+
+                    const foundInPart = tags.filter(tag => {
+                        debug('tag', tag, chunk.text.indexOf(tag));
+                        return chunk.text.indexOf(tag) > -1;
+                    }).length > 1;
+
+                    return chunk.text.indexOf(phrase) > -1 || foundInPart;
                 }).forEach(chunk => {
+                    chunk.start = convertSeconds(chunk.start);
+                    chunk.end = convertSeconds(chunk.end);
                     uniqueParents[result['parent']].transcript.push(chunk);
                 });
 

@@ -40,6 +40,10 @@
         const framesContainer = document.querySelector('#resultsContainer #frames');
         const transcriptContainer = document.querySelector('#resultsContainer #transcriptions');
 
+        function generateTimestamps(time){
+            return `${ time.hours < 10 ? '0' + time.hours : time.hours }:${time.minutes < 10 ? '0' + time.minutes : time.minutes}:${time.seconds < 10 ? '0' + time.seconds : time.seconds}`;
+        }
+
         searchForm.addEventListener('submit', function(e){
             
             e.preventDefault();
@@ -62,7 +66,7 @@
                     }
                 })
                 .then(function(response){
-                    console.log(response);
+                    console.log(response.data);
                     const data = response.data;
                     
                     const framesList = framesContainer.querySelector('ol')
@@ -77,8 +81,8 @@
                             return `<li><img src="/keyframe/${frame.uuid}.jpg" /></li>`
                         }).join('');
                         
-                        const transcriptHTML = data[key].transcript.map(chunk => {
-                            return `<li data-start="${chunk.start}" data-end=${chunk.end}><p>${chunk.text}</p></li>`
+                        const transcriptHTML = `${key}` + data[key].transcript.map(chunk => {
+                            return `<li data-start='${JSON.stringify(chunk.start)}' data-end='${JSON.stringify(chunk.end)}'><span>${generateTimestamps(chunk.start)} --> ${generateTimestamps(chunk.end)}</span><p>${chunk.text}</span><p>${chunk.text}</p></li>`
                         }).join('');
 
                         framesList.innerHTML += framesHTML;

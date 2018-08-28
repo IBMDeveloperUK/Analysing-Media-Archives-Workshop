@@ -47,6 +47,14 @@ nav div a{
     color: white;
 }
 
+nav #link{
+    flex-direction: row;
+}
+
+nav #link div{
+    padding: 1em;
+}
+
 main{
     margin-top: 60px;
     padding: 1em;
@@ -151,6 +159,7 @@ main #resultsContainer #resultsWrapper .resultsList{
     align-items: center;
     display: flex;
     flex-direction: column;
+    text-align: right;
 }
 
 main #resultsContainer #resultsWrapper .resultsList ol{
@@ -161,6 +170,10 @@ main #resultsContainer #resultsWrapper .resultsList ol{
     display: flex;
     flex-wrap: wrap;
     justify-content: space-evenly;
+}
+
+main #resultsContainer #resultsWrapper #transcriptions ol li p{
+    padding-left: 2em;
 }
 
 main #resultsContainer ol li img{
