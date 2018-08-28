@@ -85,10 +85,13 @@
                             const li = document.createElement('li');
                             const img = document.createElement('img');
 
+                            li.dataset.timeoffset = frame.keyframeTimeoffset;
+                            li.dataset.source = frame.parent;
                             img.setAttribute('src', `/keyframe/${frame.uuid}.jpg`);
 
                             li.addEventListener('click', function(){
                                 console.log(this);
+                                console.log(frame);
                             }, false);
 
                             li.appendChild(img);
