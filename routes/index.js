@@ -371,17 +371,19 @@ router.post('/search', (req, res, next) => {
     } else {
     
         const phrase = req.body.searchTerm.toLowerCase();
-        const tags = phrase.split(' ');
-    
-        debug(tags.map(tag => {return {'class' : tag}}));
-    
+        const tags = phrase.split(' ').map(tag => {return {'class' : tag}});
+        
+        tags.push({"class" : phrase});
+
+        debug(tags);
+
         const queries = [];
     
         const keyframeSearch = database.query({
             "selector": {
                 "analysis": {
                     "$elemMatch": {
-                        "$or": tags.map(tag => {return {'class' : tag}})
+                        "$or": tags
                     }
                 }
             }
