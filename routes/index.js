@@ -19,12 +19,53 @@ router.get('/analyse', function(req, res, next) {
     storage.list()
         .then(data => {
             debug(data.Contents);
-            /*res.render('analyse', { 
-                title: 'Express',
-                item : data.Contents
-            });*/
 
+            database.query({
+                    "selector": {
+                        "$or": data.Contents.map(fileObject => { return {"name" : fileObject.Key} })
+                    }
+                }, 'index')
+                .then(records => {
+                    debug('OBJS:', records);
 
+                    return database.query({
+                            "selector" : {
+                                "$or" : records.map(record => { return { "parent" : record.uuid } })
+                            },
+                        }, 'transcripts')
+                        .then(transcripts => {
+                            // debug('TRANSCRIPTS:', transcripts);
+
+                            const itemInfo = data.Contents.map(item => {
+
+                                const databaseEntry = records.filter(record => {
+                                    debug('RECORD:', record, 'ITEM:', item);
+                                    return record.name === item.Key
+                                })[0];
+
+                                debug(databaseEntry);
+                                
+                                return {
+                                    Key : item.Key,
+                                    exists : databaseEntry !== undefined,
+                                    // transcribed: transcripts.filter(transcript => transcript.parent === databaseEntry.uuid)[0] !== undefined
+                                };
+                                
+                            });
+
+                            // debug('iI:', itemInfo);
+
+                            res.render('analyse', { 
+                                title: 'Express',
+                                item : itemInfo
+                            });
+                
+
+                        })    
+                    ;
+
+                })
+            ;
 
         })
     ;
