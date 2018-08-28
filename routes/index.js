@@ -305,8 +305,8 @@ router.post('/search', (req, res, next) => {
 
     debug(req.body);
 
-    const phrase = req.body.searchTerm;
-    const tags = req.body.searchTerm.split(' ');
+    const phrase = req.body.searchTerm.toLowerCase();
+    const tags = phrase.split(' ');
 
     debug(tags.map(tag => {return {'class' : tag}}));
 
@@ -322,15 +322,55 @@ router.post('/search', (req, res, next) => {
         }
     }, 'frames');
 
-    const transcriptSearch = Promise.resolve([]);
+    const transcriptSearch = database.query({
+        "selector" : {
+            "uuid" : {
+                "$exists" : true
+            }
+        }
+    }, 'transcripts');
     
     Promise.all( [ keyframeSearch, transcriptSearch ] )
         .then(searchResults => {
             debug(searchResults);
+
+            const uniqueParents = {};
+
+            searchResults[0].forEach(result => {
+                debug(result);
+                if(!uniqueParents[result['parent']]){
+                    uniqueParents[result['parent']] = {
+                        frames : [],
+                        transcript : []    
+                    };
+                }
+
+                uniqueParents[result['parent']].frames.push(result);
+
+            });
+
+            searchResults[1].forEach(result => {
+                debug(result);
+                if(!uniqueParents[result['parent']]){
+                    uniqueParents[result['parent']] = {
+                        frames : [],
+                        transcript : []    
+                    };
+                }
+
+                result.transcript.chunks.filter(chunk => {
+                    debug(chunk);
+                    return chunk.text.indexOf(phrase) > -1;
+                }).forEach(chunk => {
+                    uniqueParents[result['parent']].transcript.push(chunk);
+                });
+
+            });
+
             res.json({
                 status : "ok",
                 message : "Data arrived.",
-                data : searchResults[0]
+                data : uniqueParents
             });
         })
         .catch(err => {
