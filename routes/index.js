@@ -19,10 +19,13 @@ router.get('/analyse', function(req, res, next) {
     storage.list()
         .then(data => {
             debug(data.Contents);
-            res.render('analyse', { 
+            /*res.render('analyse', { 
                 title: 'Express',
                 item : data.Contents
-            });
+            });*/
+
+
+
         })
     ;
 
@@ -190,6 +193,7 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                                                 
                                                 const audioTranscription = analyse.audio(data.Body)
                                                     .then(transcriptionData => {
+                                                        transcriptionData.uuid = uuid();
                                                         transcriptionData.parent = document.uuid;
                                                         return database.add(transcriptionData, 'transcripts')
                                                             .then(function(){
