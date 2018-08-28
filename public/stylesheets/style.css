@@ -1,3 +1,7 @@
+*[data-active="false"]{
+    display: none !important;
+}
+
 html,body{
     background-color: #f5f5f5;
     width: 100%;
@@ -61,6 +65,7 @@ main table{
     border-spacing: 0;
     background-color: white;
     box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+    width: 100%;
 }
 
 main table thead{
@@ -79,10 +84,67 @@ main table tbody tr td:first-child{
     white-space: nowrap;
 }
 
-main table tbody tr td:not( :nth-child(1) ){
+main table tr td:not( :nth-child(1) ){
     text-align: right;
 }
 
 main table tbody tr td[href]{
     cursor: pointer;
+}
+
+main form{
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    flex-direction: column;
+    max-width: 600px;
+}
+
+main form input[type="text"]{
+    font-size: 1em;
+    padding: 1em;
+    border: 1px solid transparent;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15);
+    margin-bottom: 1em;
+}
+
+main form input[type="submit"]{
+    width: 200px;
+    padding: 1em;
+    display: block;
+    border: 0 solid transparent;
+    background: #7da3d3;
+    color: white;
+    font-size: 1em;
+    box-shadow: 0 2px 3px rgba(0,0,0,0.50);
+    align-self: center;
+    cursor: pointer;
+}
+
+main #resultsContainer{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+main #resultsContainer #resultsWrapper{
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+    align-items: center;
+}
+
+main #resultsContainer #resultsWrapper .resultsList{
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+
+main #resultsContainer #resultsWrapper .resultsList ol{
+    width: 100%;
+    list-style-type: none;
 }
