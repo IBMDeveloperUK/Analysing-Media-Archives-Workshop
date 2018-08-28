@@ -316,6 +316,32 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                     })
                     .catch(err => {
                         debug('ERR:', err);
+
+                        return database.query({
+                                selector : {
+                                    "uuid" : {
+                                        "$eq" : document.uuid
+                                    }
+                                }
+                            }, 'index')
+                            .then(results => {
+                                results[0].analysing = {
+                                    frames : false,
+                                    audio : false
+                                }
+                                return database.add(results[0], 'index');
+                            })
+                            .then(function(){
+
+                                res.status(500);
+                                res.json({
+                                    status : "err",
+                                    message : 'An error occurred during analysis'
+                                });
+
+                            })
+                        ;
+
                     })
                 ;
 
