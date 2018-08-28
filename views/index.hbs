@@ -29,3 +29,45 @@
     </div>
 
 </div>
+
+<script>
+
+    (function(){
+
+        'use strict';
+
+        const searchForm = document.querySelector('#search');
+
+        searchForm.addEventListener('submit', function(e){
+            
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            console.log(this[0].value);
+
+            fetch('/search', {
+                    method : "POST",
+                    headers : {
+                        "Content-Type" : "application/json"
+                    },
+                    body : JSON.stringify( { searchTerm : this[0].value } )
+                })
+                .then(function(res){
+                    if(res.ok){
+                        return res.json();
+                    } else {
+                        throw res;
+                    }
+                })
+                .then(function(response){
+                    console.log(response);
+                })
+                .catch(function(err){
+                    console.log('Search err:', err);
+                })
+
+        }, false);
+
+    }());
+
+</script>

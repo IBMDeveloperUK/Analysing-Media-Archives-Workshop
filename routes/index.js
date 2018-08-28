@@ -301,4 +301,44 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
 
 });
 
+router.post('/search', (req, res, next) => {
+
+    debug(req.body);
+
+    const phrase = req.body.searchTerm;
+    const tags = req.body.searchTerm.split(' ');
+
+    debug(tags.map(tag => {return {'class' : tag}}));
+
+    const queries = [];
+
+    const keyframeSearch = database.query({
+        "selector": {
+            "analysis": {
+                "$elemMatch": {
+                    "$or": tags.map(tag => {return {'class' : tag}})
+                }
+            }
+        }
+    }, 'frames');
+
+    const transcriptSearch = Promise.resolve([]);
+    
+    Promise.all( [ keyframeSearch, transcriptSearch ] )
+        .then(searchResults => {
+            debug(searchResults);
+            res.json({
+                status : "ok",
+                message : "Data arrived.",
+                data : searchResults[0]
+            });
+        })
+        .catch(err => {
+            debug('Search err:', err);
+        })
+    ;
+
+
+});
+
 module.exports = router;
