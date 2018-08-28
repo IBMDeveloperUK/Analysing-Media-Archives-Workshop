@@ -88,8 +88,18 @@
 
                         const framesFragment = document.createDocumentFragment();
                         const transcriptFragment = document.createDocumentFragment();
+                        
+                        if(data[key].frames.length > 0){
 
-                        const framesHTML = data[key].frames.forEach(frame => {
+                            const keySpan = document.createElement('span');
+                            keySpan.classList.add('key');
+                            keySpan.textContent = key;
+                            
+                            framesFragment.appendChild(keySpan);
+
+                        }
+
+                        data[key].frames.forEach(frame => {
 
                             const li = document.createElement('li');
                             const img = document.createElement('img');

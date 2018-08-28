@@ -192,10 +192,15 @@ main #resultsContainer #resultsWrapper #transcriptions ol li p{
     padding-left: 2em;
 }
 
-main #resultsContainer #resultsWrapper #transcriptions ol span.key{
+main #resultsContainer #resultsWrapper ol span.key{
     text-align: right;
     width: 100%;
     font-weight: 800;
+    margin: 2em 0 1em;
+}
+
+main #resultsContainer #resultsWrapper #frames ol span.key{
+    text-align: left;
 }
 
 main #resultsContainer #resultsWrapper #transcriptions ol li span.timings{
