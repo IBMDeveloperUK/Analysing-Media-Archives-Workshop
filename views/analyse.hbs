@@ -17,7 +17,13 @@
             <td>{{this.Key}}</td>
             <td>{{#if this.exists}} Yes {{else}} No {{/if}} </td>
             <td>{{#if this.transcribed}} Yes {{else}} No {{/if}}</td>
-            <td><a href="#" class="analysisTrigger" data-requesting="false" data-objectkey="{{this.Key}}">Analyse</a></td>
+            <td> 
+                {{#if this.analysing}} 
+                    <a href="#" class="analysisTrigger" data-requesting="true" data-objectkey="{{this.Key}}">Processing</a>
+                {{else}}
+                    <a href="#" class="analysisTrigger" data-requesting="false" data-objectkey="{{this.Key}}">Analyse</a>
+                {{/if}}
+            </td>
         </tr>
         {{/each}}
     </tbody>
@@ -40,7 +46,6 @@
                 e.stopImmediatePropagation();
 
                 const that = this;
-
 
                 if(this.dataset.requesting === "false"){
 
