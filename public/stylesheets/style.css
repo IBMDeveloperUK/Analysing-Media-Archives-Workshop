@@ -101,6 +101,14 @@ main table tbody tr td[href]{
     cursor: pointer;
 }
 
+main table tbody a.analysisTrigger[data-requesting="true"] {
+    text-decoration: none;
+    cursor: initial;
+    color: #00000082;
+    font-style: italic;
+}
+
+
 main form{
     display: flex;
     width: 100%;

@@ -17,7 +17,7 @@
             <td>{{this.Key}}</td>
             <td>{{#if this.exists}} Yes {{else}} No {{/if}} </td>
             <td>{{#if this.transcribed}} Yes {{else}} No {{/if}}</td>
-            <td><a href="#" class="analysisTrigger" data-objectkey="{{this.Key}}">Analyse</a></td>
+            <td><a href="#" class="analysisTrigger" data-requesting="false" data-objectkey="{{this.Key}}">Analyse</a></td>
         </tr>
         {{/each}}
     </tbody>
@@ -39,23 +39,35 @@
                 e.preventDefault();
                 e.stopImmediatePropagation();
 
-                fetch('/analyse/' + this.dataset.objectkey, {method : "POST"})
-                    .then(function(res){
-                        if(res.ok){
-                            return res.json();
-                        } else {
-                            throw res;
-                        }
-                    })
-                    .then(function(response){
-                        console.log(response);
-                    })
-                    .catch(function(err){
-                    })
-                ;
-                console.log(this.dataset.objectkey);
+                const that = this;
 
-            }, false);
+
+                if(this.dataset.requesting === "false"){
+
+                    this.textContent = 'Requesting';
+                    this.dataset.requesting = "true";
+
+                    fetch('/analyse/' + this.dataset.objectkey, {method : "POST"})
+                        .then(function(res){
+                            if(res.ok){
+                                return res.json();
+                            } else {
+                                throw res;
+                            }
+                        })
+                        .then(function(response){
+                            console.log(response);
+                            that.textContent = "Processing";
+                        })
+                        .catch(function(err){
+                            console.log('Analyse err:', err);
+                        })
+                    ;
+                    console.log(this.dataset.objectkey);
+                }
+
+                }, false);
+
 
         })
 
