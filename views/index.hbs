@@ -77,17 +77,61 @@
 
                     Object.keys(data).forEach(key => {
 
-                        const framesHTML = data[key].frames.map(frame => {
-                            return `<li><img src="/keyframe/${frame.uuid}.jpg" /></li>`
-                        }).join('');
-                        
-                        const transcriptHTML = `<span class="key">${data[key].transcript.length > 0 ? key : ''}</span>` + data[key].transcript.map(chunk => {
-                            return `<li data-start='${JSON.stringify(chunk.start)}' data-end='${JSON.stringify(chunk.end)}'><span class="timings">${generateTimestamps(chunk.start)} --> ${generateTimestamps(chunk.end)}</span><p>${chunk.text}</p></li>`
-                        }).join('');
+                        const framesFragment = document.createDocumentFragment();
+                        const transcriptFragment = document.createDocumentFragment();
 
-                        framesList.innerHTML += framesHTML;
-                        transcriptList.innerHTML += transcriptHTML;
+                        const framesHTML = data[key].frames.forEach(frame => {
+
+                            const li = document.createElement('li');
+                            const img = document.createElement('img');
+
+                            img.setAttribute('src', `/keyframe/${frame.uuid}.jpg`);
+
+                            li.addEventListener('click', function(){
+                                console.log(this);
+                            }, false);
+
+                            li.appendChild(img);
+                            framesFragment.appendChild(li);
+
+                        });
+
+                        if(data[key].transcript.length > 0){
+
+                            const keySpan = document.createElement('span');
+                            keySpan.classList.add('key');
+                            keySpan.textContent = key;
+
+                            data[key].transcript.map(chunk => {
+                                const li = document.createElement('li');
+                                const timingSpan = document.createElement('span');
+                                const transcription = document.createElement('p');
+                                
+                                li.dataset.start = JSON.stringify(chunk.start);
+                                li.dataset.end = JSON.stringify(chunk.end);
+
+                                timingSpan.classList.add('timings');
+                                timingSpan.textContent = `${generateTimestamps(chunk.start)} --> ${generateTimestamps(chunk.end)}`
+
+                                transcription.textContent = chunk.text;
+
+                                li.appendChild(timingSpan);
+                                li.appendChild(transcription);
+
+                                li.addEventListener('click', function(){
+                                    console.log(this);
+                                }, false);
+
+                                transcriptFragment.appendChild(li);
+
+                            });        
+                            
+                            transcriptFragment.appendChild(keySpan);
+
+                        }
                         
+                        framesList.appendChild(framesFragment);
+                        transcriptList.appendChild(transcriptFragment);
 
                     });
 
