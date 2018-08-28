@@ -48,7 +48,7 @@ router.get('/analyse', function(req, res, next) {
                                 return {
                                     Key : item.Key,
                                     exists : databaseEntry !== undefined,
-                                     transcribed: databaseEntry !== undefined ? transcripts.filter(transcript => transcript.parent === databaseEntry.uuid)[0] !== undefined : false
+                                    transcribed: databaseEntry !== undefined ? transcripts.filter(transcript => transcript.parent === databaseEntry.uuid)[0] !== undefined : false
                                 };
                                 
                             });
@@ -57,7 +57,6 @@ router.get('/analyse', function(req, res, next) {
                                 title: 'Media Archiver Analyser',
                                 item : itemInfo
                             });
-                
 
                         })    
                     ;
@@ -110,8 +109,7 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                             document = results[0];
                             document.analysing = {
                                 frames : true,
-                                audio : true,
-                                text: true
+                                audio : true
                             }
                         }
 
@@ -239,7 +237,22 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
 
                                                         });
 
-                                                        return Promise.all(S);
+                                                        return Promise.all(S)
+                                                            .then(function(){
+
+                                                                return database.query({
+                                                                        selector : {
+                                                                            "uuid" : {
+                                                                                "$eq" : document.uuid
+                                                                            }
+                                                                        }
+                                                                    }, 'index')
+                                                                    .then(results => {
+                                                                        results[0].analysing.frames = false;
+                                                                        return database.add(results[0], 'index');
+                                                                    })
+                                                                ;
+                                                            });
 
                                                     })
                                                 ;
@@ -252,7 +265,23 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                                                         transcriptionData.parent = document.uuid;
                                                         return database.add(transcriptionData, 'transcripts')
                                                             .then(function(){
-                                                                return transcriptionData;
+                                                                
+                                                                return database.query({
+                                                                        selector : {
+                                                                            "uuid" : {
+                                                                                "$eq" : document.uuid
+                                                                            }
+                                                                        }
+                                                                    }, 'index')
+                                                                    .then(results => {
+                                                                        results[0].analysing.audio = false;
+                                                                        return database.add(results[0], 'index');
+                                                                    })
+                                                                    .then(function(){
+                                                                        return transcriptionData;
+                                                                    })
+                                                                ;
+
                                                             })
                                                             .catch(err => {
                                                                 debug('DB error (transcripts):', err);
