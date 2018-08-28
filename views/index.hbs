@@ -38,6 +38,7 @@
 
         const searchForm = document.querySelector('#search');
         const framesContainer = document.querySelector('#resultsContainer #frames');
+        const transcriptContainer = document.querySelector('#resultsContainer #transcriptions');
 
         searchForm.addEventListener('submit', function(e){
             
@@ -65,14 +66,25 @@
                     const data = response.data;
                     
                     const framesList = framesContainer.querySelector('ol')
+                    const transcriptList = transcriptContainer.querySelector('ol')
+                    
                     framesList.innerHTML = "";
+                    transcriptList.innerHTML = "";
 
                     Object.keys(data).forEach(key => {
 
-                        const HTML = data[key].frames.map(frame => {
+                        const framesHTML = data[key].frames.map(frame => {
                             return `<li><img src="/keyframe/${frame.uuid}.jpg" /></li>`
                         }).join('');
-                        framesList.innerHTML += HTML;
+                        
+                        const transcriptHTML = data[key].transcript.map(chunk => {
+                            return `<li data-start="${chunk.start}" data-end=${chunk.end}><p>${chunk.text}</p></li>`
+                        }).join('');
+
+                        framesList.innerHTML += framesHTML;
+                        transcriptList.innerHTML += transcriptHTML;
+                        
+
                     });
 
                 })
