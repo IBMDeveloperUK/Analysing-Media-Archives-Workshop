@@ -6,7 +6,7 @@
         <tr>
             <td>Name</td>
             <td>Processed?</td>
-            <td>Transcripted?</td>
+            <td>Transcribed?</td>
             <td>Trigger Analysis</td>
         </tr>
     </thead>
@@ -15,8 +15,8 @@
         {{#each item}}
         <tr>
             <td>{{this.Key}}</td>
-            <td>{{this.exists}}</td>
-            <td>{{this.transcribed}}</td>
+            <td>{{#if this.exists}} Yes {{else}} No {{/if}} </td>
+            <td>{{#if this.transcribed}} Yes {{else}} No {{/if}}</td>
             <td><a href="#">Analyse</a></td>
         </tr>
         {{/each}}

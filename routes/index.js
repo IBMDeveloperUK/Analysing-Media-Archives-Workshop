@@ -48,7 +48,7 @@ router.get('/analyse', function(req, res, next) {
                                 return {
                                     Key : item.Key,
                                     exists : databaseEntry !== undefined,
-                                    // transcribed: transcripts.filter(transcript => transcript.parent === databaseEntry.uuid)[0] !== undefined
+                                     transcribed: databaseEntry !== undefined ? transcripts.filter(transcript => transcript.parent === databaseEntry.uuid)[0] !== undefined : false
                                 };
                                 
                             });
