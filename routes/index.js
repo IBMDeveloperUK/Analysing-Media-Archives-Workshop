@@ -116,7 +116,7 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                         }
 
                         // Cleanup existing records
-                        return Promise.all( [ database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'frames'), database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'transcripts') ],  )
+                        return Promise.all( [ database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'frames'), database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'transcripts') ]  )
                             .then(results => {
                                 debug(results[0]);
 

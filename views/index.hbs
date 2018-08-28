@@ -81,8 +81,8 @@
                             return `<li><img src="/keyframe/${frame.uuid}.jpg" /></li>`
                         }).join('');
                         
-                        const transcriptHTML = `${key}` + data[key].transcript.map(chunk => {
-                            return `<li data-start='${JSON.stringify(chunk.start)}' data-end='${JSON.stringify(chunk.end)}'><span>${generateTimestamps(chunk.start)} --> ${generateTimestamps(chunk.end)}</span><p>${chunk.text}</span><p>${chunk.text}</p></li>`
+                        const transcriptHTML = `<span class="key">${data[key].transcript.length > 0 ? key : ''}</span>` + data[key].transcript.map(chunk => {
+                            return `<li data-start='${JSON.stringify(chunk.start)}' data-end='${JSON.stringify(chunk.end)}'><span class="timings">${generateTimestamps(chunk.start)} --> ${generateTimestamps(chunk.end)}</span><p>${chunk.text}</p></li>`
                         }).join('');
 
                         framesList.innerHTML += framesHTML;
