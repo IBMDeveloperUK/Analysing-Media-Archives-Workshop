@@ -58,6 +58,32 @@
                         .then(function(response){
                             console.log(response);
                             that.textContent = "Processing";
+
+                            let check = setInterval(function(){
+
+                                fetch('/check/' + that.dataset.objectkey)
+                                    .then(function(res){
+                                        if(res.ok){
+                                            return res.json();
+                                        } else {
+                                            throw res;
+                                        }
+                                    })
+                                    .then(function(response){
+                                        
+                                        if(response.data.audio === false && response.data.frames === false){
+                                            clearInterval(check);
+                                            that.textContent = "Done";
+                                        }
+
+                                    })
+                                    .catch(err => {
+                                        console.log('Checking err:', err);
+                                    })
+                                ;
+
+                            }, 3000);
+
                         })
                         .catch(function(err){
                             console.log('Analyse err:', err);

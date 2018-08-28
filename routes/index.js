@@ -454,6 +454,25 @@ router.post('/search', (req, res, next) => {
 
 });
 
+router.get('/check/:OBJECT_NAME', (req, res, next) => {
+
+    database.query({
+            "selector" : {
+                "name" : {
+                    "$eq" : req.params.OBJECT_NAME
+                },
+            }
+        }, 'index')
+        .then(documents => {
+            res.json({
+                status : "ok",
+                data : documents[0].analysing
+            });
+        })
+    ;
+
+});
+
 router.get('/keyframe/:ObjectKey', (req, res, next) => {
 
     storage.getStream(req.params.ObjectKey, 'cos-frames').pipe(res);
