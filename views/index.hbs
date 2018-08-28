@@ -101,6 +101,8 @@
                             const keySpan = document.createElement('span');
                             keySpan.classList.add('key');
                             keySpan.textContent = key;
+                            
+                            transcriptFragment.appendChild(keySpan);
 
                             data[key].transcript.map(chunk => {
                                 const li = document.createElement('li');
@@ -125,8 +127,6 @@
                                 transcriptFragment.appendChild(li);
 
                             });        
-                            
-                            transcriptFragment.appendChild(keySpan);
 
                         }
                         
