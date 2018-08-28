@@ -72,7 +72,7 @@ function extractFramesFromVideoAndClassifyThem(file){
                         classifyImage(data.image)
                             .then(analysis => {
                                 data.analysis = analysis;
-                                debug('DAAAAATTTTAAAA:', data);
+                                debug('Watson Data:', data);
                                 resolve(data);
                             })
                             .catch(err => {

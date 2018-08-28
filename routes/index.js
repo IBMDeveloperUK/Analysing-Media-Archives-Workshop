@@ -11,7 +11,7 @@ const DATABASE_THROTTLE_TIME = 200;
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-    res.render('index', { title: 'Express' });
+    res.render('index', { title: 'Media Archive Analyser' });
 });
 
 router.get('/analyse', function(req, res, next) {
@@ -34,7 +34,6 @@ router.get('/analyse', function(req, res, next) {
                             },
                         }, 'transcripts')
                         .then(transcripts => {
-                            // debug('TRANSCRIPTS:', transcripts);
 
                             const itemInfo = data.Contents.map(item => {
 
@@ -53,10 +52,8 @@ router.get('/analyse', function(req, res, next) {
                                 
                             });
 
-                            // debug('iI:', itemInfo);
-
                             res.render('analyse', { 
-                                title: 'Express',
+                                title: 'Media Archiver Analyser',
                                 item : itemInfo
                             });
                 
