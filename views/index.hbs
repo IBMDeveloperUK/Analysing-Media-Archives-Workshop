@@ -7,7 +7,7 @@
 
 </form>
 
-<div id="resultsContainer">
+<div id="resultsContainer" data-active="false">
     <h2>Results</h2>
 
     <div id="resultsWrapper">
@@ -30,6 +30,11 @@
 
 </div>
 
+<div id="overlay" data-active="false">
+    <div id="frameData">
+    </div>
+</div>
+
 <script>
 
     (function(){
@@ -37,8 +42,12 @@
         'use strict';
 
         const searchForm = document.querySelector('#search');
+        const resultsContainer = document.querySelector('#resultsContainer');
         const framesContainer = document.querySelector('#resultsContainer #frames');
         const transcriptContainer = document.querySelector('#resultsContainer #transcriptions');
+
+        const overlayElement = document.querySelector('#overlay');
+        const overlayContent = overlayElement.querySelector('#frameData');
 
         function generateTimestamps(time){
             return `${ time.hours < 10 ? '0' + time.hours : time.hours }:${time.minutes < 10 ? '0' + time.minutes : time.minutes}:${time.seconds < 10 ? '0' + time.seconds : time.seconds}`;
@@ -92,6 +101,46 @@
                             li.addEventListener('click', function(){
                                 console.log(this);
                                 console.log(frame);
+                                
+                                overlayContent.innerHTML = "";
+                                
+                                const overlayFragment = document.createDocumentFragment();
+                                const image = document.createElement('img');
+                                const properties = document.createElement('ol');
+
+                                image.setAttribute('src', `/keyframe/${frame.uuid}.jpg`);
+
+                                frame.analysis.forEach(classification => {
+                                    const li = document.createElement('li');
+                                    const name = document.createElement('span');
+                                    const value = document.createElement('span');
+
+                                    name.textContent = classification.class;
+                                    value.textContent = `${classification.score * 100}%`;
+
+                                    li.appendChild(name);
+                                    li.appendChild(value);
+
+                                    properties.appendChild(li);
+
+                                });
+
+                                const closeBtn = document.createElement('button');
+                                closeBtn.classList.add('closeBtn')
+                                closeBtn.textContent = 'Close';
+
+                                closeBtn.addEventListener('click', function(){
+                                    overlayElement.dataset.active = "false";
+                                }, false);
+
+                                overlayFragment.appendChild(image);
+                                overlayFragment.appendChild(properties);
+                                overlayFragment.appendChild(closeBtn);
+
+                                overlayContent.appendChild(overlayFragment);
+
+                                overlayElement.dataset.active = 'true';
+
                             }, false);
 
                             li.appendChild(img);
@@ -137,6 +186,8 @@
                         transcriptList.appendChild(transcriptFragment);
 
                     });
+
+                    resultsContainer.dataset.active = "true";
 
                 })
                 .catch(function(err){

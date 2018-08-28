@@ -306,86 +306,96 @@ router.post('/search', (req, res, next) => {
 
     debug(req.body);
 
-    const phrase = req.body.searchTerm.toLowerCase();
-    const tags = phrase.split(' ');
-
-    debug(tags.map(tag => {return {'class' : tag}}));
-
-    const queries = [];
-
-    const keyframeSearch = database.query({
-        "selector": {
-            "analysis": {
-                "$elemMatch": {
-                    "$or": tags.map(tag => {return {'class' : tag}})
-                }
-            }
-        }
-    }, 'frames');
-
-    const transcriptSearch = database.query({
-        "selector" : {
-            "uuid" : {
-                "$exists" : true
-            }
-        }
-    }, 'transcripts');
+    if(req.body.searchTerm === "" || !req.body.searchTerm){
+        res.status(422);
+        res.json({
+            status : "err",
+            message : "No search term was passed"
+        });
+    } else {
     
-    Promise.all( [ keyframeSearch, transcriptSearch ] )
-        .then(searchResults => {
-            debug(searchResults);
-
-            const uniqueParents = {};
-
-            searchResults[0].forEach(result => {
-                debug(result);
-                if(!uniqueParents[result['parent']]){
-                    uniqueParents[result['parent']] = {
-                        frames : [],
-                        transcript : []    
-                    };
+        const phrase = req.body.searchTerm.toLowerCase();
+        const tags = phrase.split(' ');
+    
+        debug(tags.map(tag => {return {'class' : tag}}));
+    
+        const queries = [];
+    
+        const keyframeSearch = database.query({
+            "selector": {
+                "analysis": {
+                    "$elemMatch": {
+                        "$or": tags.map(tag => {return {'class' : tag}})
+                    }
                 }
-
-                uniqueParents[result['parent']].frames.push(result);
-
-            });
-
-            searchResults[1].forEach(result => {
-                debug(result);
-                if(!uniqueParents[result['parent']]){
-                    uniqueParents[result['parent']] = {
-                        frames : [],
-                        transcript : []    
-                    };
+            }
+        }, 'frames');
+    
+        const transcriptSearch = database.query({
+            "selector" : {
+                "uuid" : {
+                    "$exists" : true
                 }
-
-                result.transcript.chunks.filter(chunk => {
-                    debug(chunk);
-
-                    const foundInPart = tags.filter(tag => {
-                        debug('tag', tag, chunk.text.indexOf(tag));
-                        return chunk.text.indexOf(tag) > -1;
-                    }).length > 1;
-
-                    return chunk.text.indexOf(phrase) > -1 || foundInPart;
-                }).forEach(chunk => {
-                    chunk.start = convertSeconds(chunk.start);
-                    chunk.end = convertSeconds(chunk.end);
-                    uniqueParents[result['parent']].transcript.push(chunk);
+            }
+        }, 'transcripts');
+        
+        Promise.all( [ keyframeSearch, transcriptSearch ] )
+            .then(searchResults => {
+                debug(searchResults);
+    
+                const uniqueParents = {};
+    
+                searchResults[0].forEach(result => {
+                    debug(result);
+                    if(!uniqueParents[result['parent']]){
+                        uniqueParents[result['parent']] = {
+                            frames : [],
+                            transcript : []    
+                        };
+                    }
+    
+                    uniqueParents[result['parent']].frames.push(result);
+    
                 });
+    
+                searchResults[1].forEach(result => {
+                    debug(result);
+                    if(!uniqueParents[result['parent']]){
+                        uniqueParents[result['parent']] = {
+                            frames : [],
+                            transcript : []    
+                        };
+                    }
+    
+                    result.transcript.chunks.filter(chunk => {
+                        debug(chunk);
+    
+                        const foundInPart = tags.filter(tag => {
+                            debug('tag', tag, chunk.text.indexOf(tag));
+                            return chunk.text.indexOf(tag) > -1;
+                        }).length > 1;
+    
+                        return chunk.text.indexOf(phrase) > -1 || foundInPart;
+                    }).forEach(chunk => {
+                        chunk.start = convertSeconds(chunk.start);
+                        chunk.end = convertSeconds(chunk.end);
+                        uniqueParents[result['parent']].transcript.push(chunk);
+                    });
+    
+                });
+    
+                res.json({
+                    status : "ok",
+                    message : "Data arrived.",
+                    data : uniqueParents
+                });
+            })
+            .catch(err => {
+                debug('Search err:', err);
+            })
+        ;
 
-            });
-
-            res.json({
-                status : "ok",
-                message : "Data arrived.",
-                data : uniqueParents
-            });
-        })
-        .catch(err => {
-            debug('Search err:', err);
-        })
-    ;
+    }
 
 });
 

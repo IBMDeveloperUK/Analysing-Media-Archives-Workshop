@@ -172,6 +172,10 @@ main #resultsContainer #resultsWrapper .resultsList ol{
     justify-content: space-evenly;
 }
 
+main #resultsContainer #resultsWrapper #frames ol li{
+    cursor: pointer;
+}
+
 main #resultsContainer #resultsWrapper #transcriptions ol li{
     width: 100%;
 }
@@ -192,4 +196,51 @@ main #resultsContainer #resultsWrapper #transcriptions ol li span.timings{
 
 main #resultsContainer ol li img{
     width: 200px;
+}
+
+main #overlay{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2147483647;
+}
+
+main #overlay #frameData{
+    width: 350px;
+    background: white;
+    box-shadow: 0 5px 10px black;
+    padding: 1em;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+}
+
+main #overlay #frameData img{
+    max-width: 100%;
+}
+
+main #overlay #frameData ol{
+    padding: 0;
+    width: 100%;
+}
+
+main #overlay #frameData ol li{
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5em;
+}
+
+main #overlay #frameData ol li span:nth-child(1){
+    font-weight: 800;
 }
