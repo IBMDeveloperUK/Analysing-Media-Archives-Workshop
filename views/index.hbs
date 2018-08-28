@@ -93,7 +93,7 @@
 
                             const keySpan = document.createElement('span');
                             keySpan.classList.add('key');
-                            keySpan.textContent = key;
+                            keySpan.textContent = data[key].name;
                             
                             framesFragment.appendChild(keySpan);
 
@@ -162,7 +162,7 @@
 
                             const keySpan = document.createElement('span');
                             keySpan.classList.add('key');
-                            keySpan.textContent = key;
+                            keySpan.textContent = data[key].name;
                             
                             transcriptFragment.appendChild(keySpan);
 

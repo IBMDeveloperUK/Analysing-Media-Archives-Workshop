@@ -441,15 +441,38 @@ router.post('/search', (req, res, next) => {
                     });
     
                 });
-    
-                res.json({
-                    status : "ok",
-                    message : "Data arrived.",
-                    data : uniqueParents
-                });
+                
+                return database.query({
+                        "selector": {
+                            "uuid": {
+                                "$or": Object.keys(uniqueParents)
+                            }
+                        }
+                    }, 'index')
+                    .then(data => {
+
+                        debug(data);
+                        
+                        data.forEach(datum => {
+                            uniqueParents[datum.uuid].name = datum.name;
+                        });
+
+                        res.json({
+                            status : "ok",
+                            message : "Data arrived.",
+                            data : uniqueParents
+                        });
+
+                    })
+                ;
             })
             .catch(err => {
                 debug('Search err:', err);
+                res.status(500);
+                res.json({
+                    status : "err",
+                    message : "An error occurred performing the search",
+                });
             })
         ;
 
