@@ -947,7 +947,7 @@ Variables required:
 2. DATABASE_PASSWORD
 3. DATABASE_ENDPOINT
 
-To get the environment variables needed to access your database, follow these next steps
+To get the environment variables needed to access your database, follow these next steps:
 
 1. Go to your [IBM Cloud Dashboard](https://console.bluemix.net/dashboard/apps) and find the Cloudant DB instance you created at the start of this document. Click to view the instance.
 2. On the left hand side of the screen there is an option 'Service Credentials', click it, and then click 'New Credential' after it appears on the right side of the screen.
@@ -957,3 +957,31 @@ To get the environment variables needed to access your database, follow these ne
     - For the `DATABASE_USERNAME` environment variable, copy and paste the `username` value from the service credentials
     - For the `DATABASE_PASSWORD` environment variable, copy and paste the `password` value from the service credentials
     - For the `DATABASE_ENDPOINT` environment variable, copy and paste the `url` value from the service credentials
+
+#### Watson Visual Recognition
+
+Variables required:
+1. VISUAL_RECOGNITION_KEY
+
+To get the environment variables needed to use Watson Visual Recognition, follow these next steps:
+
+1. Go to your [IBM Cloud Dashboard](https://console.bluemix.net/dashboard/apps) and find the Watson Visual Recognition instance you created at the start of this document. Click to view the instance.
+2. On the left hand side of the screen there is an option 'Service Credentials', click it.
+3. On the page, there will be an item in the table titled 'Auto-generated service credentials'. Click the 'View credential' dropdown next to it,
+4. - For the `VISUAL_RECOGNITION_KEY` environment variable, copy and paste the `apikey` value from the service credentials.
+
+#### Watson Speech to Text
+
+Variables required:
+1. STT_USERNAME
+2. STT_PASSWORD
+3. STT_URL
+
+To get the environment variables needed to use Watson Speech to Text, follow these next steps:
+
+1. Go to your [IBM Cloud Dashboard](https://console.bluemix.net/dashboard/apps) and find the Watson Visual Recognition instance you created at the start of this document. Click to view the instance.
+2. On the left hand side of the screen there is an option 'Service Credentials', click it.
+3. On the page, there will be an item in the table titled 'Auto-generated service credentials'. Click the 'View credential' dropdown next to it,
+4. - For the `STT_USERNAME` environment variable, copy and paste the `username` value from the service credentials.
+- For the `STT_PASSWORD` environment variable, copy and paste the `password` value from the service credentials.
+- For the `STT_URL` environment variable, copy and paste the `url` value from the service credentials.
