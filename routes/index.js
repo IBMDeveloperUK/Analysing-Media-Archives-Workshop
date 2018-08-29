@@ -22,76 +22,49 @@ router.get('/', function(req, res, next) {
 
 router.get('/analyse', function(req, res, next) {
     // GET ANALYSE ROUTE
-    storage.list()
-        .then(data => {
-            // CODE BLOCK 1
-            database.query({
-                    "selector": {
-                        "$or": data.Contents.map(fileObject => { return {"name" : fileObject.Key} })
-                    }
-                }, 'index')
-                .then(records => {
-                    debug('OBJS:', records);
-                    // CODE BLOCK 2
-                    return database.query({
-                            "selector" : {
-                                "$or" : records.map(record => { return { "parent" : record.uuid } })
-                            },
-                        }, 'transcripts')
-                        .then(transcripts => { 
-                            // CODE BLOCK 3
-                            
-                            const itemInfo = data.Contents.map(item => {
-
-                                const databaseEntry = records.filter(record => {
-                                    debug('RECORD:', record, 'ITEM:', item);
-                                    return record.name === item.Key
-                                })[0];
-
-                                debug(databaseEntry);
-                                
-                                return {
-                                    Key : item.Key,
-                                    exists : databaseEntry !== undefined,
-                                    transcribed: databaseEntry !== undefined ? transcripts.filter(transcript => transcript.parent === databaseEntry.uuid)[0] !== undefined : false,
-                                    analysing: databaseEntry !== undefined ? databaseEntry.analysing.frames || databaseEntry.analysing.audio : false
-                                };
-                                
-                            });
-
-                            res.render('analyse', { 
-                                title: 'Media Archiver Analyser',
-                                item : itemInfo
-                            });
-
-                        })    
-                    ;
-
-                })
-            ;
-
-        })
-    ;
+    res.end();
 });
 
 router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
+    
     // POST ANALYSE ROUTE
-    res.end();
+    res.end()
+
 });
 
 router.post('/search', (req, res, next) => {
+    
     // GET SEARCH ROUTE
     res.end();
+
 });
 
 router.get('/check/:OBJECT_NAME', (req, res, next) => {
-    // GET CHECK ROUTE
-    res.end()
+
+    // A convenience endpoint used by the client-side code in /analyse
+    // to check the analysis state of any media object.
+    database.query({
+            "selector" : {
+                "name" : {
+                    "$eq" : req.params.OBJECT_NAME
+                },
+            }
+        }, 'index')
+        .then(documents => {
+            res.json({
+                status : "ok",
+                data : documents[0].analysing
+            });
+        })
+    ;
+
 });
 
 router.get('/keyframe/:ObjectKey', (req, res, next) => {
-    // GET KEYFRAME ROUTE
-    res.end();
+    
+    // Handy little function to expose the keyframes to the client
+    storage.getStream(req.params.ObjectKey, 'cos-frames').pipe(res);
+
 });
 
 module.exports = router;
