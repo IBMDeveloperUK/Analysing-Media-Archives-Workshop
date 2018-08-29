@@ -178,4 +178,4 @@ res.render('analyse', {
     item : itemInfo
 });
 ```
-7. We now have all of the code that we need to view our `/analyse` route!
+7. We now have all of the code that we need to view our `/analyse` route! But we also need a little bit of JavaScript to make it behave the way we'd like (triggering analysis processes on demand). Find the file `/views/analyse.hbs` and open it for editing.

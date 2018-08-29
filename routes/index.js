@@ -22,7 +22,56 @@ router.get('/', function(req, res, next) {
 
 router.get('/analyse', function(req, res, next) {
     // GET ANALYSE ROUTE
-    res.end();
+    storage.list()
+        .then(data => {
+            // CODE BLOCK 1
+            database.query({
+                    "selector": {
+                        "$or": data.Contents.map(fileObject => { return {"name" : fileObject.Key} })
+                    }
+                }, 'index')
+                .then(records => {
+                    debug('OBJS:', records);
+                    // CODE BLOCK 2
+                    return database.query({
+                            "selector" : {
+                                "$or" : records.map(record => { return { "parent" : record.uuid } })
+                            },
+                        }, 'transcripts')
+                        .then(transcripts => { 
+                            // CODE BLOCK 3
+                            
+                            const itemInfo = data.Contents.map(item => {
+
+                                const databaseEntry = records.filter(record => {
+                                    debug('RECORD:', record, 'ITEM:', item);
+                                    return record.name === item.Key
+                                })[0];
+
+                                debug(databaseEntry);
+                                
+                                return {
+                                    Key : item.Key,
+                                    exists : databaseEntry !== undefined,
+                                    transcribed: databaseEntry !== undefined ? transcripts.filter(transcript => transcript.parent === databaseEntry.uuid)[0] !== undefined : false,
+                                    analysing: databaseEntry !== undefined ? databaseEntry.analysing.frames || databaseEntry.analysing.audio : false
+                                };
+                                
+                            });
+
+                            res.render('analyse', { 
+                                title: 'Media Archiver Analyser',
+                                item : itemInfo
+                            });
+
+                        })    
+                    ;
+
+                })
+            ;
+
+        })
+    ;
 });
 
 router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
