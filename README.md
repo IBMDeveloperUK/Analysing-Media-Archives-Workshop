@@ -117,7 +117,9 @@ Our application is made up of two views _'analyse'_ and _'search'_. The _'analys
 In this demo application, we have all of the routes set up to deliver our application, but none of the logic for populating our application with content or search capabilites, so we'll do that now.
 
 1. Open this folder in your favourite IDE for editing and open the file `routes/index.js`.
+
 2. In here, you will see all of the routes we have defined for our application. We're going to edit the `GET /analyse`. Look for the code block that has `// GET ANALYSE ROUTE` in it and delete the line reading `res.end()` just after it. We'll be copy and pasting our code in this space for the next little while.
+
 3. Copy and paste the following code on the line after `GET ANALYSE ROUTE`
 ```javaScript
 storage.list()
@@ -128,6 +130,7 @@ storage.list()
 ;
 ```
 This will access our cloud object storage and get a list of all of the files in our media archive.
+
 4. Next, we want to check whether or not we have any record of this file in our CloudantDB 'index' database. Copy and paste the following code just after the line that reads `CODE BLOCK 1`
 ```javascript
 database.query({
@@ -142,6 +145,7 @@ database.query({
     })
 ;
 ```
+
 5. Once we have those records, we also want to check whether or not these files have been previously transcribed. We can do that by running another query, but this time against our Cloudant DB 'transcript' database. Copy and paste the following code onto the line just after `// CODE BLOCK 2`.
 ```javascript
 return database.query({
@@ -155,6 +159,7 @@ return database.query({
     })    
 ;
 ```
+
 6. We now have records of whether or not our file has ever been processed by our server before, and whether or not they've been transcribed. Now we're going to shape that information so that we can use it to render our 'analyse' view. Copy and paste the following code on the line that reads just after `// CODE BLOCK 3`
 ```javascript
 const itemInfo = data.Contents.map(item => {
@@ -180,7 +185,9 @@ res.render('analyse', {
     item : itemInfo
 });
 ```
-7. We now have all of the code that we need to view our `/analyse` route! But we also need a little bit of JavaScript to make it behave the way we'd like (triggering analysis processes on demand). 
+
+7. We now have all of the code that we need to view our `/analyse` route! But we also need a little bit of JavaScript to make it behave the way we'd like (triggering analysis processes on demand).
+
 8. Find the file `/views/analyse.hbs` and open it for editing. Copy and paste the following code just beneath the line that reads `// CODE BLOCK 1` (in between the `<script>` tags).
 ```javascript
 (function(){
@@ -261,7 +268,9 @@ This code will bind an event listener to the _Analyse_ buttons in the table and 
 So, now we have the code for displaying all of the objects that we can analysis, and all of the code we need to trigger an analysis. Next up, we need the code for actually performing the analysis.
 
 1. Open up the file `/routes/index.js` for editing again.
+
 2. Find the line that reads `// POST ANALYSE ROUTE` and delete the line that reads `res.end()` just after it.
+
 3. On the line just after `// POST ANALYSE ROUTE` copy and paste the following code.
 ```javascript
 const objectName = req.params.OBJECT_NAME;
@@ -458,6 +467,7 @@ return database.add(document, 'index')
     })
 ;
 ```
+
 7. In this part of the code, we're going to start two of the analysis processes - the keyframe extraction and classification, and the audio extraction and transcription. First, we'll add the code for the keyframe analysis and classification. Copy and paste the following code just after `// CODE BLOCK 7`
 ```javascript
 const frameClassification = analyse.frames(data.Body)
@@ -635,6 +645,7 @@ const transcriptSearch = database.query({
 // CODE BLOCK 10
 
 ```
+
 4. Once we have those queries ready to go, we'll fire them off to the database and wait for the results. Copy and paste the following code after the line that reads `// CODE BLOCK 10`.
 ```javascript
 Promise.all( [ keyframeSearch, transcriptSearch ] )
@@ -916,6 +927,7 @@ In order to run the application, we first need to set up some environment variab
 ### Setting up variables locally
 
 1. In the root of your project folder (the folder with the app.js file in it) create a new file called `.env`.
+
 2. Copy and paste the following block of text into your newly created `.env` file and save it.
 
 ```
