@@ -697,6 +697,7 @@ searchResults[1].forEach(result => {
 
 ```
 In this block of code, we're checking which frames (if any) belong to which videos and creating an object `uniqueParents` which we add all of the results that match the search terms. We then parse through the transcriptions looking for a match.
+
 6. Once that's done, we just need to find out the file names for the media files that the classifications belong to. We'll do one final query to the 'index' database before sending the results back to the client. Copy and paste the following code beneath the line that reads `// CODE BLOCK 12`
 ```javascript
 return database.query({
@@ -723,6 +724,7 @@ return database.query({
 ;
 ```
 Et Voila! We have a simple search engine that can return results for the classifications of keyframes, and any transcribed content for a given search query.
+
 7. Finally, we need to put together a little bit of JavaScript for a search form to work in our app. Open the file `/views/index.hbs` and copy and paste the following code on the line just after `// CODE BLOCK 13`
 ```javascript
 
