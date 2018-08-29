@@ -83,13 +83,17 @@ router.get('/analyse', function(req, res, next) {
 router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
 
     const objectName = req.params.OBJECT_NAME;
-
     debug(objectName);
-
+    
+    // Before we try to analyse anything, we want to make sure that the
+    // file actually exists, so we do that first with storage.check();
     storage.check(objectName)
         .then(exists => {
             if(exists){
                 
+                // Once we know the file exists, we attempt to retrieve the corresponding
+                // record (the 'document') from our database which keeps track of all
+                // file analysed in the past, or currently being analysed.
                 database.query({
                         "selector": {
                             "name": {
@@ -101,7 +105,11 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
 
                         debug(results.length);
                         let document;
-
+                        
+                        // If there's no document in our database, we've never analysed
+                        // this file before. So, we'll give it a UUID and create a document
+                        // that can store in our database to track the state of any
+                        // analysis process.
                         if(results.length === 0){
 
                             const objectUUID = uuid();
@@ -117,6 +125,9 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                             };
 
                         } else {
+                            // If there is already a record for this file, then we've analysed
+                            // it before, but that's OK, we can still trigger a re-analysis of
+                            // anything in our storage bucket.
                             document = results[0];
                             document.analysing = {
                                 frames : true,
@@ -124,17 +135,28 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                             }
                         }
 
-                        // Cleanup existing records
+                        // Before we analyse anything, we want to clean up any supporting files from past 
+                        // analysis. This means deleting transcriptions and keyframes from previous analysis
+                        // This database query will get us a list of all of the transcriptions and keyframes.
                         return Promise.all( [ database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'frames'), database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'transcripts') ]  )
                             .then(results => {
                                 debug(results[0]);
-
+                                
+                                // First up, delete the keyframes from our object storage.
                                 const keyFramesToDelete = storage.deleteMany( results[0].map(document => { return { Key: `${document.uuid}.jpg` } }) );
+                                
+                                // This command will delete all of the keyframe and transcript records from our database
                                 const deleteKeyFrameRecordsAndTranscripts = new Promise( (resolve, reject) => {
-
+                                    
+                                    // Delete all of the keyframe records
                                     const deleteKeyframeRecordsActions = results[0].map( (document, idx) => {
                                         return new Promise( (resolve, reject) => {
-
+                                            
+                                            // Because we're using the IBM Cloud Lite tier for our workshop, we need
+                                            // to throttle the number of requests being made to the database.
+                                            // Normally, this process would be much faster and wouldn't need a 
+                                            // setTimeout. If you're on a paid account, or have your own instance,
+                                            // you can remove the setTimeout (or set DATABSE_THROTTLE_TIME to 0).
                                             setTimeout(function(){
                                                 database.delete(document._id, document._rev, 'frames')
                                                     .then(function(){
@@ -147,6 +169,7 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                                         
                                     });
 
+                                    // When all of the keyframe records have been deleted, delete the transcriptions too
                                     Promise.all(deleteKeyframeRecordsActions)
                                         .then(function(){
 
@@ -180,31 +203,54 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
 
                                 });
 
+                                // Wait until both the keyframes in our object storage, and the records of our 
+                                // keyframes and transcripts in our database are deleted, and then move on to
+                                // the next bit of code.
                                 return Promise.all( [ keyFramesToDelete, deleteKeyFrameRecordsAndTranscripts ] )
 
                             })
                             .then(function(){
                                 debug('Clean up done');
+                                
+                                // So we've cleaned up our database and object storage for analysis, now 
+                                // it's time to start analysing!
 
+                                // Here, we write a record to our 'index' database which we'll use to 
+                                // keep track of the analysis process as it's worked through.
                                 return database.add(document, 'index')
                                     .then(function(){
 
+                                        // Now that we know that the media file exists, and that all previous
+                                        // analysis have been cleaned up, we can grab the file from the object
+                                        // storage for analysis.
                                         return storage.get(objectName)
                                             .then(data => {
                                                 debug(data);
 
-                                                // Tell the client that the good work is underway
+                                                // The client request that triggered our analysis is still waiting
+                                                // for a response. Let's tell it that the analysis is underway.
                                                 res.json({
                                                     status : "ok",
                                                     message : `Beginning analysis for '${objectName}'`
                                                 });
 
+                                                // We're going to be performing two analysis on this media file.
+                                                // We're going to analyse the keyframes in the video file to ascertain what the video
+                                                // contains, and we're going to analyse the audio to extract a transcription of
+                                                // the video that we can use to search key terms that are spoken aloud. 
                                                 const analysis = [];
 
+                                                // Here, we trigger the keyframe analysis. The video object is passed to the 
+                                                // analyse.frames function where it identifies the keyframes and sends off 
+                                                // each identified frame to IBM Watson Visual Recognition for classification
                                                 const frameClassification = analyse.frames(data.Body)
                                                     .then(frames => {
                                                         debug(frames);
-
+                                                        
+                                                        // Once each frame has been analysed, we'll iterate through each one and
+                                                        // save it to our object storage (so we can display it later if needs be),
+                                                        // and we'll save the classifications from Watson for use in our search engine
+                                                        // later.
                                                         const S = frames.map( (frame, idx) => {
 
                                                             return new Promise( (resolve, reject) => {
@@ -213,9 +259,12 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                                                                 
                                                                 const frameData = Object.assign({}, frame);
                                                                 
+                                                                // The 'parent' property saves the UUID of the record of the media
+                                                                // file that we added in the 'index' database so we can track which
+                                                                // keyframes belong to which videos.
                                                                 frameData.parent = document.uuid;
                                                                 frameData.uuid = uuid();
-                                                                delete frameData.image;
+                                                                delete frameData.image; // We don't want to store the image buffer in our database
             
                                                                 const saveFrame = storage.put(`${frameData.uuid}.jpg`, frame.image, 'cos-frames');
                                                                 const saveClassifications = new Promise( (resolveA, reject) => {
@@ -248,6 +297,9 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
 
                                                         });
 
+                                                        // When every frame has been stored in object storage and recorded in
+                                                        // our database, we'll update our original document in 'index' to 
+                                                        // mark that we've finished analysing the keyframes of the video.
                                                         return Promise.all(S)
                                                             .then(function(){
 
@@ -270,10 +322,17 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
 
                                                 analysis.push(frameClassification);
                                                 
+                                                // Here, we pass the video file through to the analyse.audio()
+                                                // function. This function will extract the audio from the video file
+                                                // (it will also run it through a band pass filter that contains only
+                                                // the frequencies that human voices operate in) and pass it on to
+                                                // Watson Speech To Text for transcription
                                                 const audioTranscription = analyse.audio(data.Body)
                                                     .then(transcriptionData => {
                                                         transcriptionData.uuid = uuid();
                                                         transcriptionData.parent = document.uuid;
+
+                                                        // Once we have our transcription, we add it to our database.
                                                         return database.add(transcriptionData, 'transcripts')
                                                             .then(function(){
                                                                 
@@ -306,7 +365,9 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                                                 ;
                                                 
                                                 analysis.push(audioTranscription);
-
+                                                
+                                                // When we're done analysing both the frames and audio, we're free
+                                                // to move on to the next bit of code!
                                                 return Promise.all(analysis);
 
                                             })
@@ -322,6 +383,8 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                         
                     })
                     .then(function(data){
+                        // The analysis is complete. We're now able to query the content in the
+                        // /search endpoint of our application.
                         debug('All Done.');
                         debug(data);
                     })
@@ -357,6 +420,9 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                 ;
 
             } else {
+
+                // If the file we tried to analyse doesn't exist in the bucket,
+                // we tell the user and reject the request;
                 res.status(404);
                 res.json({
                     status : 'err',
@@ -371,6 +437,8 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
 router.post('/search', (req, res, next) => {
 
     debug(req.body);
+
+    // Presumably, we have things we can search for in our database, so let's do it!
 
     if(req.body.searchTerm === "" || !req.body.searchTerm){
         res.status(422);
