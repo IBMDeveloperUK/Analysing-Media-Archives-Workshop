@@ -86,8 +86,8 @@ In order for us to search for image classifications efficiently, we're going to 
     "type": "json"
 }
 ```
-
-5. A new index should appear in the right-hand side of the page with the title `"json: _id, analysis.[].class"`. We're done here!
+5. Click the 'Create Index' button.
+6. A new index should appear in the right-hand side of the page with the title `"json: _id, analysis.[].class"`. We're done here!
 
 ### Node.js Cloud Foundry App
 
