@@ -933,7 +933,7 @@ STT_URL=
 
 ### Getting the values for your environment variables
 
-#### Cloud Object Storage
+#### Cloud Object Storage
 
 Variables required:
 1. COS_ENDPOINT
@@ -941,7 +941,7 @@ Variables required:
 3. COS_ACCESS_KEY_ID
 4. COS_ACCESS_KEY_SECRET
 
-These variables will be given out at the workshop. You can also use credebtials for your own object storage service if you have one set up already (either IBM Cloud Object Storage or AWS S3)
+These variables will be given out at the workshop. You can also use credentials for your own object storage service if you have one set up already (either IBM Cloud Object Storage or AWS S3)
 
 #### Cloudant DB 
 
