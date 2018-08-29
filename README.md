@@ -179,3 +179,77 @@ res.render('analyse', {
 });
 ```
 7. We now have all of the code that we need to view our `/analyse` route! But we also need a little bit of JavaScript to make it behave the way we'd like (triggering analysis processes on demand). Find the file `/views/analyse.hbs` and open it for editing.
+8. Copy and paste the following code just beneath the line that reads `// CODE BLOCK 1` (in between the `<script>` tags).
+```javascipt
+(function(){
+
+    'use strict';
+
+    const analyseButtons = Array.from(document.querySelectorAll('tbody td a.analysisTrigger'));
+
+    analyseButtons.forEach(function(button){
+
+        button.addEventListener('click', function(e){
+
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            const that = this;
+
+            if(this.dataset.requesting === "false"){
+
+                this.textContent = 'Requesting';
+                this.dataset.requesting = "true";
+
+                fetch('/analyse/' + this.dataset.objectkey, {method : "POST"})
+                    .then(function(res){
+                        if(res.ok){
+                            return res.json();
+                        } else {
+                            throw res;
+                        }
+                    })
+                    .then(function(response){
+                        console.log(response);
+                        that.textContent = "Processing";
+
+                        let check = setInterval(function(){
+
+                            fetch('/check/' + that.dataset.objectkey)
+                                .then(function(res){
+                                    if(res.ok){
+                                        return res.json();
+                                    } else {
+                                        throw res;
+                                    }
+                                })
+                                .then(function(response){
+                                    
+                                    if(response.data.audio === false && response.data.frames === false){
+                                        clearInterval(check);
+                                        that.textContent = "Done";
+                                    }
+
+                                })
+                                .catch(err => {
+                                    console.log('Checking err:', err);
+                                })
+                            ;
+
+                        }, 3000);
+
+                    })
+                    .catch(function(err){
+                        console.log('Analyse err:', err);
+                    })
+                ;
+                console.log(this.dataset.objectkey);
+            }
+
+        }, false);
+
+    })
+
+}());
+```
+This code will bind an event listener to the _Analyse_ buttons in the table and trigger an analysis process for that media file when clicked.
