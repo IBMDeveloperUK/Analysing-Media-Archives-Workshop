@@ -574,3 +574,327 @@ analysis.push(audioTranscription);
 return Promise.all(analysis);
 ```
 Just as we stored our keyframe data in the 'frames' database, with this code, we'll now have some transcripts in the 'transcripts' database.
+
+### Searching our analysis results
+
+Right! We can now analyse media objects. Hurrah! So let's make a simple search engine for them.
+
+We've already got everything we need to get started, so we just need a little more code.
+
+1. Still in the `/routes/index.js` file, find the line that starts with `// GET SEARCH ROUTE` and delete the line that read `res.end()` just after it.
+2. Copy and paste the following line just after the line that reads `// GET SEARCH ROUTE`
+```javascript
+debug(req.body);
+
+if(req.body.searchTerm === "" || !req.body.searchTerm){
+    res.status(422);
+    res.json({
+        status : "err",
+        message : "No search term was passed"
+    });
+} else {
+
+    // CODE BLOCK 9
+    
+}
+```
+Here, we're just making sure that we're actually getting something to search for before we try to query our database. If there's no search query we just reject the request.
+3. Once we get something that we can actually look for, we'll put together the database queries to surface some results (if there are any) to the user. Copy and paste the following code after the line that reads `// CODE BLOCK 9`
+```javascript
+const phrase = req.body.searchTerm.toLowerCase();
+const tags = phrase.split(' ').map(tag => {return {'class' : tag}});
+tags.push({"class" : phrase});
+
+const queries = [];
+
+const keyframeSearch = database.query({
+    "selector": {
+        "analysis": {
+            "$elemMatch": {
+                "$or": tags
+            }
+        }
+    }
+}, 'frames');
+
+const transcriptSearch = database.query({
+    "selector" : {
+        "uuid" : {
+            "$exists" : true
+        }
+    }
+}, 'transcripts');
+
+// CODE BLOCK 10
+
+```
+4. Once we have those queries ready to go, we'll fire them off to the database and wait for the results. Copy and paste the following code after the line that reads `// CODE BLOCK 10`.
+```javascript
+Promise.all( [ keyframeSearch, transcriptSearch ] )
+    .then(searchResults => {
+        debug(searchResults);
+
+        // CODE BLOCK 11
+        
+    })
+    .catch(err => {
+        debug('Search err:', err);
+        res.status(500);
+        res.json({
+            status : "err",
+            message : "An error occurred performing the search",
+        });
+    })
+;
+```
+5. It'll take a few seconds for the requests for both the transcripts and the keyframes results to return. Once we have both sets of results, we'll put them to work. Copy and paste the following code just after the line that reads `// CODE BLOCK 11`
+```javascript
+const uniqueParents = {};
+
+searchResults[0].forEach(result => {
+    debug(result);
+    if(!uniqueParents[result['parent']]){
+        uniqueParents[result['parent']] = {
+            frames : [],
+            transcript : []    
+        };
+    }
+
+    uniqueParents[result['parent']].frames.push(result);
+
+});
+
+searchResults[1].forEach(result => {
+    debug(result);
+    if(!uniqueParents[result['parent']]){
+        uniqueParents[result['parent']] = {
+            frames : [],
+            transcript : []    
+        };
+    }
+    
+    result.transcript.chunks.filter(chunk => {
+        debug(chunk);
+
+        const foundInPart = tags.filter(tag => {
+            debug('tag', tag, chunk.text.indexOf(tag));
+            return chunk.text.indexOf(tag) > -1;
+        }).length > 1;
+
+        return chunk.text.indexOf(phrase) > -1 || foundInPart;
+    }).forEach(chunk => {
+
+        chunk.start = convertSeconds(chunk.start);
+        chunk.end = convertSeconds(chunk.end);
+
+        uniqueParents[result['parent']].transcript.push(chunk);
+    });
+
+});
+
+// CODE BLOCK 12
+
+```
+In this block of code, we're checking which frames (if any) belong to which videos and creating an object `uniqueParents` which we add all of the results that match the search terms. We then parse through the transcriptions looking for a match.
+6. Once that's done, we just need to find out the file names for the media files that the classifications belong to. We'll do one final query to the 'index' database before sending the results back to the client. Copy and paste the following code beneath the line that reads `// CODE BLOCK 12`
+```javascript
+return database.query({
+        "selector": {
+            "uuid": {
+                "$or": Object.keys(uniqueParents)
+            }
+        }
+    }, 'index')
+    .then(data => {
+
+        debug(data);
+        data.forEach(datum => {
+            uniqueParents[datum.uuid].name = datum.name;
+        });
+
+        res.json({
+            status : "ok",
+            message : "Data arrived.",
+            data : uniqueParents
+        });
+
+    })
+;
+```
+Et Voila! We have a simple search engine that can return results for the classifications of keyframes, and any transcribed content for a given search query.
+7. Finally, we need to put together a little bit of JavaScript for a search form to work in our app. Open the file `/views/index.hbs` and copy and paste the following code on the line just after `// CODE BLOCK 13`
+```javascript
+
+(function(){
+
+    'use strict';
+
+    const searchForm = document.querySelector('#search');
+    const resultsContainer = document.querySelector('#resultsContainer');
+    const framesContainer = document.querySelector('#resultsContainer #frames');
+    const transcriptContainer = document.querySelector('#resultsContainer #transcriptions');
+
+    const overlayElement = document.querySelector('#overlay');
+    const overlayContent = overlayElement.querySelector('#frameData');
+
+    function generateTimestamps(time){
+        return `${ time.hours < 10 ? '0' + time.hours : time.hours }:${time.minutes < 10 ? '0' + time.minutes : time.minutes}:${time.seconds < 10 ? '0' + time.seconds : time.seconds}`;
+    }
+
+    searchForm.addEventListener('submit', function(e){
+        
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        console.log(this[0].value);
+
+        fetch('/search', {
+                method : "POST",
+                headers : {
+                    "Content-Type" : "application/json"
+                },
+                body : JSON.stringify( { searchTerm : this[0].value } )
+            })
+            .then(function(res){
+                if(res.ok){
+                    return res.json();
+                } else {
+                    throw res;
+                }
+            })
+            .then(function(response){
+
+                console.log(response.data);
+                const data = response.data;
+                
+                const framesList = framesContainer.querySelector('ol')
+                const transcriptList = transcriptContainer.querySelector('ol')
+                
+                framesList.innerHTML = "";
+                transcriptList.innerHTML = "";
+
+                Object.keys(data).forEach(key => {
+
+                    const framesFragment = document.createDocumentFragment();
+                    const transcriptFragment = document.createDocumentFragment();
+                    
+                    if(data[key].frames.length > 0){
+
+                        const keySpan = document.createElement('span');
+                        keySpan.classList.add('key');
+                        keySpan.textContent = data[key].name;
+                        
+                        framesFragment.appendChild(keySpan);
+
+                    }
+
+                    data[key].frames.forEach(frame => {
+
+                        const li = document.createElement('li');
+                        const img = document.createElement('img');
+
+                        li.dataset.timeoffset = frame.keyframeTimeoffset;
+                        li.dataset.source = frame.parent;
+                        img.setAttribute('src', `/keyframe/${frame.uuid}.jpg`);
+
+                        li.addEventListener('click', function(){
+                            console.log(this);
+                            console.log(frame);
+                            
+                            overlayContent.innerHTML = "";
+                            
+                            const overlayFragment = document.createDocumentFragment();
+                            const image = document.createElement('img');
+                            const properties = document.createElement('ol');
+
+                            image.setAttribute('src', `/keyframe/${frame.uuid}.jpg`);
+
+                            frame.analysis.forEach(classification => {
+                                const li = document.createElement('li');
+                                const name = document.createElement('span');
+                                const value = document.createElement('span');
+
+                                name.textContent = classification.class;
+                                value.textContent = `${classification.score * 100}%`;
+
+                                li.appendChild(name);
+                                li.appendChild(value);
+
+                                properties.appendChild(li);
+
+                            });
+
+                            const closeBtn = document.createElement('button');
+                            closeBtn.classList.add('closeBtn')
+                            closeBtn.textContent = 'Close';
+
+                            closeBtn.addEventListener('click', function(){
+                                overlayElement.dataset.active = "false";
+                            }, false);
+
+                            overlayFragment.appendChild(image);
+                            overlayFragment.appendChild(properties);
+                            overlayFragment.appendChild(closeBtn);
+
+                            overlayContent.appendChild(overlayFragment);
+
+                            overlayElement.dataset.active = 'true';
+
+                        }, false);
+
+                        li.appendChild(img);
+                        framesFragment.appendChild(li);
+
+                    });
+
+                    if(data[key].transcript.length > 0){
+
+                        const keySpan = document.createElement('span');
+                        keySpan.classList.add('key');
+                        keySpan.textContent = data[key].name;
+                        
+                        transcriptFragment.appendChild(keySpan);
+
+                        data[key].transcript.map(chunk => {
+                            const li = document.createElement('li');
+                            const timingSpan = document.createElement('span');
+                            const transcription = document.createElement('p');
+                            
+                            li.dataset.start = JSON.stringify(chunk.start);
+                            li.dataset.end = JSON.stringify(chunk.end);
+
+                            timingSpan.classList.add('timings');
+                            timingSpan.textContent = `${generateTimestamps(chunk.start)} --> ${generateTimestamps(chunk.end)}`
+
+                            transcription.textContent = chunk.text;
+
+                            li.appendChild(timingSpan);
+                            li.appendChild(transcription);
+
+                            li.addEventListener('click', function(){
+                                console.log(this);
+                            }, false);
+
+                            transcriptFragment.appendChild(li);
+
+                        });        
+
+                    }
+
+                    framesList.appendChild(framesFragment);
+                    transcriptList.appendChild(transcriptFragment);
+
+                }); 
+
+                resultsContainer.dataset.active = "true";
+
+            })
+            .catch(function(err){
+                console.log('Search err:', err);
+            })
+
+    }, false);
+
+}());
+```
+Save the file, and now we have a search field that we can use to make queries to our server.
