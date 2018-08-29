@@ -253,3 +253,108 @@ res.render('analyse', {
 }());
 ```
 This code will bind an event listener to the _Analyse_ buttons in the table and trigger an analysis process for that media file when clicked.
+
+### Analysing our media object
+
+So, now we have the code for displaying all of the objects that we can analysis, and all of the code we need to trigger an analysis. Next up, we need the code for actually performing the analysis.
+
+1. Open up the file `/routes/index.js` for editing again.
+2. Find the line that reads `// POST ANALYSE ROUTE` and delete the line that reads `res.end();` just after it.
+3. On the line just after `// POST ANALYSE ROUTE` copy and paste the following code.
+```javascript
+const objectName = req.params.OBJECT_NAME;
+debug(objectName);
+
+storage.check(objectName)
+    .then(exists => {
+        if(exists){
+            // CODE BLOCK 4
+    
+        } else {
+            res.status(404);
+            res.json({
+                status : 'err',
+                message : `An object with the name '${objectName}' was not found in the object storage`
+            });
+        }
+
+    })
+;
+```
+This will check that any file that we want to analyse actually exists before we try to analyse it.
+4. Copy and paste the following code just after the line that reads `// CODE BLOCK 4`
+```javascript
+database.query({
+        "selector": {
+            "name": {
+            "$eq": objectName
+            }
+        },
+    }, 'index')
+    .then(results => {
+
+        debug(results.length);
+        let document;
+        
+        if(results.length === 0){
+
+            const objectUUID = uuid();
+
+            document = {
+                name : objectName,
+                uuid : objectUUID,
+                analysing : {
+                    frames : true,
+                    audio : true,
+                    text: true
+                }
+            };
+
+        } else {
+
+            document = results[0];
+            document.analysing = {
+                frames : true,
+                audio : true
+            }
+        }
+
+        // CODE BLOCK 5
+
+    })
+    .then(function(data){
+        debug('All Done.');
+        debug(data);
+    })
+    .catch(err => {
+        debug('ERR:', err);
+
+        return database.query({
+                selector : {
+                    "uuid" : {
+                        "$eq" : document.uuid
+                    }
+                }
+            }, 'index')
+            .then(results => {
+                results[0].analysing = {
+                    frames : false,
+                    audio : false
+                }
+                return database.add(results[0], 'index');
+            })
+            .then(function(){
+
+                res.status(500);
+                res.json({
+                    status : "err",
+                    message : 'An error occurred during analysis'
+                });
+
+            })
+        ;
+
+    })
+;
+```
+This code checks our 'index' database for a document that tells us whether or not we've analysed the file before. If a document is found, we update the document to read that we're now reanalysing the audio and keyframes of the media object. If not, we create a new object that contains the same information for future analysis.
