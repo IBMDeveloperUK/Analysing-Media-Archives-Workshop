@@ -898,3 +898,62 @@ Et Voila! We have a simple search engine that can return results for the classif
 }());
 ```
 Save the file, and now we have a search field that we can use to make queries to our server.
+
+## Running the application
+
+In order to run the application, we first need to set up some environment variables. 
+
+### Setting up variables locally
+
+1. In the root of your project folder (the folder with the app.js file in it) create a new file called `.env`.
+2. Copy and paste the following block of text into your newly created `.env` file and save it.
+
+```
+DEBUG=*
+
+COS_ENDPOINT=
+COS_REGION=
+COS_ACCESS_KEY_ID=
+COS_ACCESS_KEY_SECRET=
+COS_DEFAULT_BUCKET=media-assets
+
+DATABASE_USERNAME=
+DATABASE_PASSWORD=
+DATABASE_ENDPOINT=
+
+VISUAL_RECOGNITION_KEY=
+
+STT_USERNAME=
+STT_PASSWORD=
+STT_URL=
+```
+
+### Getting the values for your environment variables
+
+#### Cloud Object Storage
+
+Variables required:
+1. COS_ENDPOINT
+2. COS_REGION
+3. COS_ACCESS_KEY_ID
+4. COS_ACCESS_KEY_SECRET
+
+These variables will be given out at the workshop. You can also use credebtials for your own object storage service if you have one set up already (either IBM Cloud Object Storage or AWS S3)
+
+#### Cloudant DB 
+
+Variables required:
+1. DATABASE_USERNAME
+2. DATABASE_PASSWORD
+3. DATABASE_ENDPOINT
+
+To get the environment variables needed to access your database, follow these next steps
+
+1. Go to your [IBM Cloud Dashboard](https://console.bluemix.net/dashboard/apps) and find the Cloudant DB instance you created at the start of this document. Click to view the instance.
+2. On the left hand side of the screen there is an option 'Service Credentials', click it, and then click 'New Credential' after it appears on the right side of the screen.
+3. Give your credentials a name, and then click 'Add'
+4. Your new credentials will appear in the table entitled 'Service Credentials'. Click the 'View credentials' dropdown to view your newly created credentials.
+5. 
+    - For the `DATABASE_USERNAME` environment variable, copy and paste the `username` value from the service credentials
+    - For the `DATABASE_PASSWORD` environment variable, copy and paste the `password` value from the service credentials
+    - For the `DATABASE_ENDPOINT` environment variable, copy and paste the `url` value from the service credentials
