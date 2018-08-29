@@ -108,4 +108,74 @@ We now have all of the services that we need to run our analysis application. So
 2. Once you've recieved the source code, open up a terminal and head into the root of the project directory with `cd <PLACE YOU DOWNLOADED THE FILE TO>/analysing-media-archives-workshop`. In this directory, we have a basic Express.js server that we can use to deliver our web user interface, and that will grab assets for analysis by Watson. 
 3. If you intend to run and test this code locally, once in the directory run `npm install`, but if you only want to try the code out on the Cloud, you can skip this step.
 
-### 
+### Getting the data for our /analyse dashboard
+
+Our application is made up of two views _'analyse'_ and _'search'_. The _'analyse'_ view lives at the `/analyse` path of our server, the _'search'_ view is just our index page, so it lives at `/`;
+
+In this demo application, we have all of the routes set up to deliver our application, but none of the logic for populating our application with content or search capabilites, so we'll do that now.
+
+1. Open this folder in your favourite IDE for editing and open the file `routes/index.js`.
+2. In here, you will see all of the routes we have defined for our application. We're going to edit the `GET /analyse`. Look for the code block that has `// GET ANALYSE ROUTE` in it and delete the line reading `res.end()` just after it. We'll be copy and pasting our code in this space for the next little while.
+3. Copy and paste the following code on the line after `GET ANALYSE ROUTE`
+```javaScript
+storage.list()
+    .then(data => {
+        // CODE BLOCK 1
+        
+    })
+;
+```
+This will access our cloud object storage and get a list of all of the files in our media archive.
+4. Next, we want to check whether or not we have any record of this file in our CloudantDB 'index' database. Copy and paste the following code just after the line that reads `CODE BLOCK 1`
+```javascript
+database.query({
+        "selector": {
+            "$or": data.Contents.map(fileObject => { return {"name" : fileObject.Key} })
+        }
+    }, 'index')
+    .then(records => {
+        debug('OBJS:', records);
+        // CODE BLOCK 2
+
+    })
+;
+```
+5. Once we have those records, we also want to check whether or not these files have been previously transcribed. We can do that by running another query, but this time against our Cloudant DB 'transcript' database. Copy and paste the following code onto the line just after `// CODE BLOCK 2`.
+```javascript
+return database.query({
+        "selector" : {
+            "$or" : records.map(record => { return { "parent" : record.uuid } })
+        },
+    }, 'transcripts')
+    .then(transcripts => { 
+        // CODE BLOCK 3
+        
+    })    
+;
+```
+6. We now have records of whether or not our file has ever been processed by our server before, and whether or not they've been transcribed. Now we're going to shape that information so that we can use it to render our 'analyse' view. Copy and paste the following code on the line that reads just after `// CODE BLOCK 3`
+```javascript
+const itemInfo = data.Contents.map(item => {
+
+    const databaseEntry = records.filter(record => {
+        debug('RECORD:', record, 'ITEM:', item);
+        return record.name === item.Key
+    })[0];
+
+    debug(databaseEntry);
+    
+    return {
+        Key : item.Key,
+        exists : databaseEntry !== undefined,
+        transcribed: databaseEntry !== undefined ? transcripts.filter(transcript => transcript.parent === databaseEntry.uuid)[0] !== undefined : false,
+        analysing: databaseEntry !== undefined ? databaseEntry.analysing.frames || databaseEntry.analysing.audio : false
+    };
+    
+});
+
+res.render('analyse', { 
+    title: 'Media Archiver Analyser',
+    item : itemInfo
+});
+```
+7. We now have all of the code that we need to view our `/analyse` route!
