@@ -1,0 +1,4 @@
+---
+applications:
+- name: blamo-blamo-one
+  instances: 1

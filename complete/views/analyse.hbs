@@ -1,0 +1,118 @@
+<h2>Bucket Objects</h2>
+
+<table>
+
+    <thead>
+        <tr>
+            <td>Name</td>
+            <td>Processed?</td>
+            <td>Transcribed?</td>
+            <td>Trigger Analysis</td>
+        </tr>
+    </thead>
+
+    <!-- Here, we iterate through all of the items in the cloud object storage and then add -->
+    <!-- them as a row to the table for display -->
+    <tbody>
+        {{#each item}}
+        <tr>
+            <td>{{this.Key}}</td>
+            <td>{{#if this.exists}} Yes {{else}} No {{/if}} </td>
+            <td>{{#if this.transcribed}} Yes {{else}} No {{/if}}</td>
+            <td> 
+                {{#if this.analysing}} 
+                    <a href="#" class="analysisTrigger" data-requesting="true" data-objectkey="{{this.Key}}">Processing</a>
+                {{else}}
+                    <a href="#" class="analysisTrigger" data-requesting="false" data-objectkey="{{this.Key}}">Analyse</a>
+                {{/if}}
+            </td>
+        </tr>
+        {{/each}}
+    </tbody>
+
+</table>
+
+<script>
+    
+    (function(){
+
+        'use strict';
+
+        // Once the page has rendered, we iterate through every 'analyse' button
+        // on the page, and then bind an event listener which will trigger our
+        // server to analyse the media.
+
+        const analyseButtons = Array.from(document.querySelectorAll('tbody td a.analysisTrigger'));
+
+        analyseButtons.forEach(function(button){
+
+            button.addEventListener('click', function(e){
+
+                e.preventDefault();
+                e.stopImmediatePropagation();
+
+                const that = this;
+
+                // We want to check that the button hasn't been pressed already.
+                // We wouldn't want to analyse the same media files twice!
+                if(this.dataset.requesting === "false"){
+
+                    this.textContent = 'Requesting';
+                    this.dataset.requesting = "true";
+
+                    // Trigger the analysis
+                    fetch('/analyse/' + this.dataset.objectkey, {method : "POST"})
+                        .then(function(res){
+                            if(res.ok){
+                                return res.json();
+                            } else {
+                                throw res;
+                            }
+                        })
+                        .then(function(response){
+                            console.log(response);
+                            that.textContent = "Processing";
+
+                            // Periodically check the state of our analysis and display
+                            // either 'Processing' or 'Done' depending on the state.
+                            let check = setInterval(function(){
+
+                                fetch('/check/' + that.dataset.objectkey)
+                                    .then(function(res){
+                                        if(res.ok){
+                                            return res.json();
+                                        } else {
+                                            throw res;
+                                        }
+                                    })
+                                    .then(function(response){
+                                        
+                                        // When the analysis is complete, say so!
+                                        if(response.data.audio === false && response.data.frames === false){
+                                            clearInterval(check);
+                                            that.textContent = "Done";
+                                        }
+
+                                    })
+                                    .catch(err => {
+                                        console.log('Checking err:', err);
+                                    })
+                                ;
+
+                            }, 3000);
+
+                        })
+                        .catch(function(err){
+                            console.log('Analyse err:', err);
+                        })
+                    ;
+                    console.log(this.dataset.objectkey);
+                }
+
+            }, false);
+
+        })
+
+    }());
+
+</script>
