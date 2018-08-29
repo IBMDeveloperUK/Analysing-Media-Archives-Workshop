@@ -8,6 +8,9 @@ const storage = require(`${__dirname}/../bin/lib/storage`);
 const database = require(`${__dirname}/../bin/lib/database`);
 const analyse = require(`${__dirname}/../bin/lib/analyse`);
 
+// We're using the lite tier of Cloudant DB in the IBM Cloud for this
+// workshop, so we're throttling the number of requests we can make per 
+// second so we don't miss anything out.
 const DATABASE_THROTTLE_TIME = 200;
 
 router.get('/', function(req, res, next) {
@@ -16,10 +19,14 @@ router.get('/', function(req, res, next) {
 
 router.get('/analyse', function(req, res, next) {
 
+    // First up, we get a list of media files in our cloud object storage
+    // so we can give our user a choice of what they want to analyse.
     storage.list()
         .then(data => {
             debug(data.Contents);
-
+            
+            // Then, we go to our Cloudant DB instance and check whether or
+            // not we've ever analysed each media file in the past
             database.query({
                     "selector": {
                         "$or": data.Contents.map(fileObject => { return {"name" : fileObject.Key} })
@@ -28,6 +35,7 @@ router.get('/analyse', function(req, res, next) {
                 .then(records => {
                     debug('OBJS:', records);
 
+                    // Finally we check whether or not we've ever transcribed the content of the media file
                     return database.query({
                             "selector" : {
                                 "$or" : records.map(record => { return { "parent" : record.uuid } })
@@ -35,6 +43,9 @@ router.get('/analyse', function(req, res, next) {
                         }, 'transcripts')
                         .then(transcripts => {
 
+                            // Once we have the info on both the transcriptions and the info from our 
+                            // index database, we put this all together so that we can render the 
+                            // table on the /analyse page with the appropriate details.
                             const itemInfo = data.Contents.map(item => {
 
                                 const databaseEntry = records.filter(record => {
