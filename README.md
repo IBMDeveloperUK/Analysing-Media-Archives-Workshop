@@ -46,7 +46,8 @@ _**Before proceeding any further, please log in to your IBM Cloud account, it'll
 3. Scroll down and check that the pricing plan you've selected is 'Lite'.
 4. Click 'Create'.
 
-### CloudantDB
+### CloudantDB
+
 #### Creating an instance
 
 1. Create a Speech to Text instance by first clicking [here](https://console.bluemix.net/catalog/services/cloudant)
@@ -95,7 +96,7 @@ We want to run our app on the cloud, so we'll create a Node.js Cloud Foundry ins
 
 #### Creating an instance
 
-1. Create a Node.js Cloud Foundry instance by clicking [https://console.bluemix.net/catalog/starters/sdk-for-nodejs](here)
+1. Create a Node.js Cloud Foundry instance by clicking [here](https://console.bluemix.net/catalog/starters/sdk-for-nodejs)
 2. Under app name enter something unique and memorable. The app name will be used to make up your URL, so make sure to take note of it!
 3. Under 'Pricing plans' make sure that you have the 'Lite' plan selected and that you have the **256**MB option selected. The app will not run well with less memory than that.
 4. Click the 'Create' button.
