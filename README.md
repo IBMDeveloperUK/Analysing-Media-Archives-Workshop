@@ -60,10 +60,11 @@ _**Before proceeding any further, please log in to your IBM Cloud account, it'll
 
 For our application we require 3 tables - 'index', 'frames', and 'transcripts'. Follow and repeat the next set of instructions to create the needed databases.
 
-1. At the top right of your Cloudant DB dashboard, click 'Create Database'.
-2. Enter the name of your database into the dropdown that appears (either index, frames, or transcripts) and click 'Create'
-3. The database will be created, and you'll be taken to view it's documents (there aren't any yet). At the top left of your window, there will be a back arrow next to your database name. Click it.
-4. You will now be back at your dashboard home page. Repeat steps 1 - 4 until you have created all 3 databases.
+1. On the left-hand side of your Cloudant DB dashboard, there is a button which looks like three stacked pancakes. Click it.
+2. At the top right of your Cloudant DB dashboard, click 'Create Database'.
+3. Enter the name of your database into the dropdown that appears (either index, frames, or transcripts) and click 'Create'
+4. The database will be created, and you'll be taken to view it's documents (there aren't any yet). At the top left of your window, there will be a back arrow next to your database name. Click it.
+5. You will now be back at your dashboard home page. Repeat steps 1 - 4 until you have created all 3 databases.
 
 #### Creating an secondary index
 
