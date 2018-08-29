@@ -10,7 +10,6 @@ const analyse = require(`${__dirname}/../bin/lib/analyse`);
 
 const DATABASE_THROTTLE_TIME = 200;
 
-/* GET home page. */
 router.get('/', function(req, res, next) {
     res.render('index', { title: 'Media Archive Analyser' });
 });

@@ -11,6 +11,8 @@
         </tr>
     </thead>
 
+    <!-- Here, we iterate through all of the items in the cloud object storage and then add -->
+    <!-- them as a row to the table for display -->
     <tbody>
         {{#each item}}
         <tr>
@@ -31,10 +33,14 @@
 </table>
 
 <script>
-
+    
     (function(){
 
         'use strict';
+
+        // Once the page has rendered, we iterate through every 'analyse' button
+        // on the page, and then bind an event listener which will trigger our
+        // server to analyse the media.
 
         const analyseButtons = Array.from(document.querySelectorAll('tbody td a.analysisTrigger'));
 
@@ -47,11 +53,14 @@
 
                 const that = this;
 
+                // We want to check that the button hasn't been pressed already.
+                // We wouldn't want to analyse the same media files twice!
                 if(this.dataset.requesting === "false"){
 
                     this.textContent = 'Requesting';
                     this.dataset.requesting = "true";
 
+                    // Trigger the analysis
                     fetch('/analyse/' + this.dataset.objectkey, {method : "POST"})
                         .then(function(res){
                             if(res.ok){
@@ -64,6 +73,8 @@
                             console.log(response);
                             that.textContent = "Processing";
 
+                            // Periodically check the state of our analysis and display
+                            // either 'Processing' or 'Done' depending on the state.
                             let check = setInterval(function(){
 
                                 fetch('/check/' + that.dataset.objectkey)
@@ -76,6 +87,7 @@
                                     })
                                     .then(function(response){
                                         
+                                        // When the analysis is complete, say so!
                                         if(response.data.audio === false && response.data.frames === false){
                                             clearInterval(check);
                                             that.textContent = "Done";

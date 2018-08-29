@@ -53,6 +53,8 @@
             return `${ time.hours < 10 ? '0' + time.hours : time.hours }:${time.minutes < 10 ? '0' + time.minutes : time.minutes}:${time.seconds < 10 ? '0' + time.seconds : time.seconds}`;
         }
 
+
+        // When the user submits the form, we send the text value to the server for searching.
         searchForm.addEventListener('submit', function(e){
             
             e.preventDefault();
@@ -75,6 +77,12 @@
                     }
                 })
                 .then(function(response){
+
+                    // We get our response back from the server.
+                    // For every keyframe with tagged with the search term asked for 
+                    // and every transcript that has the search term in it, we generate
+                    // a view to display the results.
+
                     console.log(response.data);
                     const data = response.data;
                     
@@ -86,6 +94,9 @@
 
                     Object.keys(data).forEach(key => {
 
+                        // Document fragments let us create a little piece of the DOM
+                        // that we can use to put together our HTML before we add it
+                        // to the page.
                         const framesFragment = document.createDocumentFragment();
                         const transcriptFragment = document.createDocumentFragment();
                         
@@ -108,10 +119,18 @@
                             li.dataset.source = frame.parent;
                             img.setAttribute('src', `/keyframe/${frame.uuid}.jpg`);
 
+                            // Because we're adding elements to the document fragment
+                            // (rather than injecting HTML which is then parsed), we
+                            // can also bind event listeners to the elements as we create
+                            // them, which makes them a little easier to manage.
                             li.addEventListener('click', function(){
                                 console.log(this);
                                 console.log(frame);
                                 
+                                // Here, we're creating the content for the overlay which
+                                // will display every time somebody clicks on a classified
+                                // keyframe.
+
                                 overlayContent.innerHTML = "";
                                 
                                 const overlayFragment = document.createDocumentFragment();
@@ -135,6 +154,7 @@
 
                                 });
 
+                                // We also want a close button for our overlay.
                                 const closeBtn = document.createElement('button');
                                 closeBtn.classList.add('closeBtn')
                                 closeBtn.textContent = 'Close';
@@ -158,6 +178,8 @@
 
                         });
 
+                        // Just as we did for the keyframes, we generate the elements
+                        // for displaying the transcription results in the page.
                         if(data[key].transcript.length > 0){
 
                             const keySpan = document.createElement('span');
@@ -192,11 +214,14 @@
 
                         }
                         
+                        // We then apply the document fragments to the HTML elements
+                        // in the page...
                         framesList.appendChild(framesFragment);
                         transcriptList.appendChild(transcriptFragment);
 
-                    });
-
+                    }); 
+                    
+                    // ...and then set the results element to display.
                     resultsContainer.dataset.active = "true";
 
                 })
