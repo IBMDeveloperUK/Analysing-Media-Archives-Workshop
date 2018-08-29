@@ -261,7 +261,7 @@ This code will bind an event listener to the _Analyse_ buttons in the table and 
 So, now we have the code for displaying all of the objects that we can analysis, and all of the code we need to trigger an analysis. Next up, we need the code for actually performing the analysis.
 
 1. Open up the file `/routes/index.js` for editing again.
-2. Find the line that reads `// POST ANALYSE ROUTE` and delete the line that reads `res.end();` just after it.
+2. Find the line that reads `// POST ANALYSE ROUTE` and delete the line that reads `res.end()` just after it.
 3. On the line just after `// POST ANALYSE ROUTE` copy and paste the following code.
 ```javascript
 const objectName = req.params.OBJECT_NAME;
@@ -284,6 +284,7 @@ storage.check(objectName)
 ;
 ```
 This will check that any file that we want to analyse actually exists before we try to analyse it.
+
 4. Copy and paste the following code just after the line that reads `// CODE BLOCK 4`
 ```javascript
 database.query({
@@ -360,6 +361,7 @@ database.query({
 ;
 ```
 This code checks our 'index' database for a document that tells us whether or not we've analysed the file before. If a document is found, we update the document to read that we're now reanalysing the audio and keyframes of the media object. If not, we create a new object that contains the same information for future analysis.
+
 5. Before we start any analysis, we want to clean up any existing data about the media file so that we can surface only the most recent results in any search. After the line that reads `// CODE BLOCK 5` copy and paste the following code:
 ```javascript
 return Promise.all( [ database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'frames'), database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'transcripts') ]  )
@@ -431,6 +433,7 @@ return Promise.all( [ database.query( { "selector": { "parent": { "$eq": documen
 ;
 ```
 This code will find every transcript and keyframe that belongs to the selected media file and will delete both the objects from our cloud storage and the records from our database. This gives us a nice clean slate to work with.
+
 6. Now that we've cleaned everything up, it's time to start analysing things. First, we'll add a record to our 'index' database saying that we're about to analyse the media object, and then we'll grab the object from storage for analysis. Copy and paste the following code on the line just after `// CODE BLOCK 6`
 ```javascript
 return database.add(document, 'index')
@@ -584,6 +587,7 @@ Right! We can now analyse media objects. Hurrah! So let's make a simple search e
 We've already got everything we need to get started, so we just need a little more code.
 
 1. Still in the `/routes/index.js` file, find the line that starts with `// GET SEARCH ROUTE` and delete the line that read `res.end()` just after it.
+
 2. Copy and paste the following line just after the line that reads `// GET SEARCH ROUTE`
 ```javascript
 debug(req.body);
@@ -601,6 +605,7 @@ if(req.body.searchTerm === "" || !req.body.searchTerm){
 }
 ```
 Here, we're just making sure that we're actually getting something to search for before we try to query our database. If there's no search query we just reject the request.
+
 3. Once we get something that we can actually look for, we'll put together the database queries to surface some results (if there are any) to the user. Copy and paste the following code after the line that reads `// CODE BLOCK 9`
 ```javascript
 const phrase = req.body.searchTerm.toLowerCase();
@@ -649,6 +654,7 @@ Promise.all( [ keyframeSearch, transcriptSearch ] )
     })
 ;
 ```
+
 5. It'll take a few seconds for the requests for both the transcripts and the keyframes results to return. Once we have both sets of results, we'll put them to work. Copy and paste the following code just after the line that reads `// CODE BLOCK 11`
 ```javascript
 const uniqueParents = {};
