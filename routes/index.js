@@ -440,6 +440,8 @@ router.post('/search', (req, res, next) => {
 
     // Presumably, we have things we can search for in our database, so let's do it!
 
+    // First up, check that we've actually got something to search for. If there's no
+    // content in the body of the request, reject it.
     if(req.body.searchTerm === "" || !req.body.searchTerm){
         res.status(422);
         res.json({
@@ -447,16 +449,24 @@ router.post('/search', (req, res, next) => {
             message : "No search term was passed"
         });
     } else {
-    
+        
+        // So, we've got a term to search for. 
+        // Here, we take the search query as a whole string which we'll use to match exact
+        // terms in a search of the transcripts
         const phrase = req.body.searchTerm.toLowerCase();
+
+        // We'll also split up the phrase into its component parts that we can use to search
+        // for classifications of keyframes.
         const tags = phrase.split(' ').map(tag => {return {'class' : tag}});
         
+        // We'll also add the entire phrase to the list of tags, just in case somebody
+        // is looking for something _really_ specific.
         tags.push({"class" : phrase});
 
-        debug(tags);
-
         const queries = [];
-    
+        
+        // Here, we use the tags we generated from the phrase to look for classes on keyframes
+        // using a Cloudant DB secondary index. 
         const keyframeSearch = database.query({
             "selector": {
                 "analysis": {
@@ -466,7 +476,11 @@ router.post('/search', (req, res, next) => {
                 }
             }
         }, 'frames');
-    
+        
+        // We'll also grab every existing transcript in our database. Cloudant DB doesn't have
+        // a free text search functionality that we can use to query for key terms in values,
+        // but by loading the transcripts into memory, we can perform this action in our 
+        // application instead.
         const transcriptSearch = database.query({
             "selector" : {
                 "uuid" : {
@@ -475,12 +489,20 @@ router.post('/search', (req, res, next) => {
             }
         }, 'transcripts');
         
+        // When we have any matching keyframes and all of the transcripts, we can start to work with them.
         Promise.all( [ keyframeSearch, transcriptSearch ] )
             .then(searchResults => {
                 debug(searchResults);
-    
+                
+                // uniqueParents is the value that we'll ultimately be return to our client.
+                // Each key in the object will correspond to a uuid of a media file in our
+                // index database.
                 const uniqueParents = {};
-    
+                
+                // We itetarate through any keyframes that matched the terms we search for.
+                // If they're the first keyframe identified that belongs to a parent, then 
+                // we add the parent UUID to the uniqueParent object, and then add all of the
+                // information we have for that keyframe
                 searchResults[0].forEach(result => {
                     debug(result);
                     if(!uniqueParents[result['parent']]){
@@ -493,7 +515,12 @@ router.post('/search', (req, res, next) => {
                     uniqueParents[result['parent']].frames.push(result);
     
                 });
-    
+                
+                // We then do the exact same for every transcript that we retrieved except
+                // this time we don't know that the content of the transcription pertains to
+                // the search terms passed to the server. Before adding anything to the 
+                // uniqueParents object, we have to check whether the search terms are matched
+                // either in whole, or in part, in the transcript.
                 searchResults[1].forEach(result => {
                     debug(result);
                     if(!uniqueParents[result['parent']]){
@@ -502,7 +529,9 @@ router.post('/search', (req, res, next) => {
                             transcript : []    
                         };
                     }
-    
+                    
+                    // For every chunk in our transcript (a part of our transcript with time indexes)
+                    // we check if any of the tags are matched, or if the phrase is matched in its entirety.
                     result.transcript.chunks.filter(chunk => {
                         debug(chunk);
     
@@ -513,13 +542,19 @@ router.post('/search', (req, res, next) => {
     
                         return chunk.text.indexOf(phrase) > -1 || foundInPart;
                     }).forEach(chunk => {
+                        // For every chunk that's indentified, we convert the time indexes into and
+                        // object that'll make it easier for us to display on the client-side
                         chunk.start = convertSeconds(chunk.start);
                         chunk.end = convertSeconds(chunk.end);
+
+                        // and then we add it to the uniqueParent object.
                         uniqueParents[result['parent']].transcript.push(chunk);
                     });
     
                 });
                 
+                // Finally, we query the 'index' database one last time to get the names of
+                // each of the parent media files that the transcripts and keyframes belong to. 
                 return database.query({
                         "selector": {
                             "uuid": {
@@ -530,11 +565,12 @@ router.post('/search', (req, res, next) => {
                     .then(data => {
 
                         debug(data);
-                        
+                        // We then match the names to the keys of the uniqueParents object
                         data.forEach(datum => {
                             uniqueParents[datum.uuid].name = datum.name;
                         });
 
+                        // And then we return the results to the client
                         res.json({
                             status : "ok",
                             message : "Data arrived.",
@@ -560,6 +596,8 @@ router.post('/search', (req, res, next) => {
 
 router.get('/check/:OBJECT_NAME', (req, res, next) => {
 
+    // A convenience endpoint used by the client-side code in /analyse
+    // to check the analysis state of any media object.
     database.query({
             "selector" : {
                 "name" : {
@@ -578,7 +616,8 @@ router.get('/check/:OBJECT_NAME', (req, res, next) => {
 });
 
 router.get('/keyframe/:ObjectKey', (req, res, next) => {
-
+    
+    // Handy little function to expose the keyframes to the client
     storage.getStream(req.params.ObjectKey, 'cos-frames').pipe(res);
 
 });
