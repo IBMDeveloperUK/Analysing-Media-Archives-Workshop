@@ -532,7 +532,7 @@ In this block of code, we work through every identified and classified keyframe,
 
 8. Now that we have the code for extracting, analysing and storing our keyframes, it's time for the code that will extract, analyse, and store the transcripts for our media files. On the line just after `// CODE BLOCK 8`, copy and paste the following code:
 ```javascript
-analysis.push(frameClassification);
+
                                                 
 const audioTranscription = analyse.audio(data.Body)
     .then(transcriptionData => {
