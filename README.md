@@ -59,7 +59,7 @@ _**Before proceeding any further, please log in to your IBM Cloud account, it'll
 
 #### Creating our tables
 
-For our application we require 3 tables - 'index', 'frames', and 'transcripts'. Follow and repeat the next set of instructions to create the needed databases.
+For our application we require 3 databases - 'index', 'frames', and 'transcripts'. Follow and repeat the next set of instructions to create the needed databases.
 
 1. On the left-hand side of your Cloudant DB dashboard, there is a button which looks like three stacked pancakes. Click it.
 2. At the top right of your Cloudant DB dashboard, click 'Create Database'.
