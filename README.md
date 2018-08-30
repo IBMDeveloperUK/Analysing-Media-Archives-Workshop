@@ -27,6 +27,7 @@ We'll set up the following services in the following order (the order doesn't re
 2. Watson Speech To Text
 3. CloudantDB
 4. Node.js Cloud Foundry App
+5. Cloud Object Storage
 
 _**Before proceeding any further, please log in to your IBM Cloud account, it'll make set up go a lot faster**_.
 
@@ -95,10 +96,36 @@ We want to run our app on the cloud, so we'll create a Node.js Cloud Foundry ins
 
 #### Creating an instance
 
-1. Create a Node.js Cloud Foundry instance by clicking [https://console.bluemix.net/catalog/starters/sdk-for-nodejs](here)
+1. Create a Node.js Cloud Foundry instance by clicking [here](https://console.bluemix.net/catalog/starters/sdk-for-nodejs)
 2. Under app name enter something unique and memorable. The app name will be used to make up your URL, so make sure to take note of it!
 3. Under 'Pricing plans' make sure that you have the 'Lite' plan selected and that you have the **256**MB option selected. The app will not run well with less memory than that.
 4. Click the 'Create' button.
+
+### Cloud Object storage
+
+In order to analyse our media files, we need a place to put them where our app can see them. To that end, we'll create a cloud object storage instance that will let us access the files as we need them.
+
+#### Creating an instance
+
+1. Create an object storage instance by clicking[here](https://console.bluemix.net/catalog/services/cloud-object-storage)
+2. In the "Service Name" input, give your instance a unique and memorable name.
+3. Under 'Pricing plans' make sure you have the 'Lite' tier selected, then click "create".
+
+#### Creating a bucket and uploading files
+
+As soon as your storage instance is created, you'll be taken to its dashboard. From here, we can configure a bucket for our storage. We'll need two buckets: 1 for storing the media files that we want to analyse, and one for storing the keyframes that we extract from our videos.
+
+First, we'll create the bucket for storing the files that we want to upload.
+
+1. On the left-hand side of the dashboard there is a menu item titled 'Buckets'. Click it.
+2. In the new view that loads, click the 'Create Bucket' button that appears on the far right of the dashboard. A dialog will open.
+3. Give your bucket a name. These names are shared globally, so you won't be able to have a bucket name that anybody else on the IBM Cloud has. Make sure to take note of the name you give it, as you'll be using it in your code later on.
+4. Once you've chosen a name and a region (note down your region for later) to your liking, click "Create". You'll then be taken to a view where you can upload files and folders.
+5. In the new view, click 'Upload' and then 'Files' and then 'Select Files'. Select any files that you will want to analyse later. Once uploaded, they will appear in the 'Objects' table
+
+Now that we have our bucket for storing the files we want to analyse, we're going to create a bucket that our application will write any keyframes that we extract for later viewing.
+
+Repeat steps 1 - 4 of the previous instructions to create the new bucket, but give it a different name this time around. We're not going to directly upload any files to this bucket, our application will do that for us when we run it.
 
 ## Building our Application
 
@@ -119,7 +146,7 @@ In this demo application, we have all of the routes set up to deliver our applic
 2. In here, you will see all of the routes we have defined for our application. We're going to edit the `GET /analyse`. Look for the code block that has `// GET ANALYSE ROUTE` in it and delete the line reading `res.end()` just after it. We'll be copy and pasting our code in this space for the next little while.
 3. Copy and paste the following code on the line after `GET ANALYSE ROUTE`
 ```javaScript
-storage.list()
+storage.list(process.env.COS_MEDIA_ARCHIVE_BUCKET_NAME)
     .then(data => {
         // CODE BLOCK 1
         
@@ -266,7 +293,7 @@ So, now we have the code for displaying all of the objects that we can analysis,
 const objectName = req.params.OBJECT_NAME;
 debug(objectName);
 
-storage.check(objectName)
+storage.check(objectName, process.env.COS_MEDIA_ARCHIVE_BUCKET_NAME)
     .then(exists => {
         if(exists){
             // CODE BLOCK 4
@@ -365,7 +392,7 @@ return Promise.all( [ database.query( { "selector": { "parent": { "$eq": documen
     .then(results => {
         debug(results[0]);
         
-        const keyFramesToDelete = storage.deleteMany( results[0].map(document => { return { Key: `${document.uuid}.jpg` } }) );
+        const keyFramesToDelete = storage.deleteMany( results[0].map(document => { return { Key: `${document.uuid}.jpg` } }), process.env.COS_KEYFRAMES_BUCKET_NAME );
         
         const deleteKeyFrameRecordsAndTranscripts = new Promise( (resolve, reject) => {
             
@@ -435,7 +462,7 @@ This code will find every transcript and keyframe that belongs to the selected m
 return database.add(document, 'index')
     .then(function(){
 
-        return storage.get(objectName)
+        return storage.get(objectName, process.env.COS_MEDIA_ARCHIVE_BUCKET_NAME)
             .then(data => {
                 debug(data);
 
@@ -472,7 +499,7 @@ const frameClassification = analyse.frames(data.Body)
                 frameData.uuid = uuid();
                 delete frameData.image;
 
-                const saveFrame = storage.put(`${frameData.uuid}.jpg`, frame.image, 'cos-frames');
+                const saveFrame = storage.put(`${frameData.uuid}.jpg`, frame.image, process.env.COS_KEYFRAMES_BUCKET_NAME);
                 const saveClassifications = new Promise( (resolveA, reject) => {
                     
                     (function(frameData){
@@ -916,7 +943,8 @@ COS_ENDPOINT=
 COS_REGION=
 COS_ACCESS_KEY_ID=
 COS_ACCESS_KEY_SECRET=
-COS_DEFAULT_BUCKET=media-assets
+COS_MEDIA_ARCHIVE_BUCKET_NAME=
+COS_KEYFRAMES_BUCKET_NAME=
 
 DATABASE_USERNAME=
 DATABASE_PASSWORD=
@@ -938,8 +966,22 @@ Variables required:
 2. COS_REGION
 3. COS_ACCESS_KEY_ID
 4. COS_ACCESS_KEY_SECRET
+5. COS_MEDIA_ARCHIVE_BUCKET_NAME
+6. COS_KEYFRAMES_BUCKET_NAME
 
-These variables will be given out at the workshop. You can also use credebtials for your own object storage service if you have one set up already (either IBM Cloud Object Storage or AWS S3)
+To get the environment variables to access your cloud object storage, follow these next steps:
+
+1. Go to your [IBM Cloud Dashboard](https://console.bluemix.net/dashboard/apps) and find the storage instance you created at the start of this document. Click to view the instance.
+2. On the left hand side of the screen there is an option 'Service Credentials', click it, and then click 'New Credential' after it appears on the right side of the screen.
+3. Give your credentials a name, and then in the "Add Inline Configuration Parameters (Optional)" text field enter `{"HMAC" : true}`.
+4. Click 'Add'
+5. Your new credentials will appear in the table entitled 'Service Credentials'. Click the 'View credentials' dropdown to view your newly created credentials.
+6. - For the `COS_ENDPOINT` environment variable, enter the endpoint that matches the region you selected. You can find a list of endpoints [here](https://console.bluemix.net/docs/services/cloud-object-storage/basics/endpoints.html#select-regions-and-endpoints)
+- For the `COS_REGION` environment variable, enter the region you selected when you created your buckets.
+- For the `COS_ACCESS_KEY_ID` environment variable, copy and paste the `access_key_id` value from the service credentials 
+- For the `COS_ACCESS_KEY_SECRET` environment variable, copy and paste the `secret_access_key` value from the service credentials 
+- For the `COS_MEDIA_ARCHIVE_BUCKET_NAME` environment variable, enter the name you gave for the bucket you created to store your media files in
+- For the `COS_KEYFRAMES_BUCKET_NAME` environment variable, enter the name you gave the second bucket you created for storing the keyframes
 
 #### Cloudant DB 
 

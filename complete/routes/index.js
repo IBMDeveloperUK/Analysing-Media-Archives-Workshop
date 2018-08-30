@@ -21,7 +21,7 @@ router.get('/analyse', function(req, res, next) {
 
     // First up, we get a list of media files in our cloud object storage
     // so we can give our user a choice of what they want to analyse.
-    storage.list()
+    storage.list(process.env.COS_MEDIA_ARCHIVE_BUCKET_NAME)
         .then(data => {
             debug(data.Contents);
             
@@ -87,7 +87,7 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
     
     // Before we try to analyse anything, we want to make sure that the
     // file actually exists, so we do that first with storage.check();
-    storage.check(objectName)
+    storage.check(objectName, process.env.COS_MEDIA_ARCHIVE_BUCKET_NAME)
         .then(exists => {
             if(exists){
                 
@@ -138,12 +138,12 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                         // Before we analyse anything, we want to clean up any supporting files from past 
                         // analysis. This means deleting transcriptions and keyframes from previous analysis
                         // This database query will get us a list of all of the transcriptions and keyframes.
-                        return Promise.all( [ database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'frames'), database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'transcripts') ]  )
+                        return Promise.all( [ database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'frames'), database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'transcripts') ] )
                             .then(results => {
                                 debug(results[0]);
                                 
                                 // First up, delete the keyframes from our object storage.
-                                const keyFramesToDelete = storage.deleteMany( results[0].map(document => { return { Key: `${document.uuid}.jpg` } }) );
+                                const keyFramesToDelete = storage.deleteMany( results[0].map(document => { return { Key: `${document.uuid}.jpg` } }), process.env.COS_KEYFRAMES_BUCKET_NAME );
                                 
                                 // This command will delete all of the keyframe and transcript records from our database
                                 const deleteKeyFrameRecordsAndTranscripts = new Promise( (resolve, reject) => {
@@ -223,7 +223,7 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                                         // Now that we know that the media file exists, and that all previous
                                         // analysis have been cleaned up, we can grab the file from the object
                                         // storage for analysis.
-                                        return storage.get(objectName)
+                                        return storage.get(objectName, process.env.COS_MEDIA_ARCHIVE_BUCKET_NAME)
                                             .then(data => {
                                                 debug(data);
 
@@ -266,7 +266,7 @@ router.post('/analyse/:OBJECT_NAME', (req, res, next) => {
                                                                 frameData.uuid = uuid();
                                                                 delete frameData.image; // We don't want to store the image buffer in our database
             
-                                                                const saveFrame = storage.put(`${frameData.uuid}.jpg`, frame.image, 'cos-frames');
+                                                                const saveFrame = storage.put(`${frameData.uuid}.jpg`, frame.image, process.env.COS_KEYFRAMES_BUCKET_NAME);
                                                                 const saveClassifications = new Promise( (resolveA, reject) => {
                                                                     
                                                                     (function(frameData){
@@ -618,7 +618,7 @@ router.get('/check/:OBJECT_NAME', (req, res, next) => {
 router.get('/keyframe/:ObjectKey', (req, res, next) => {
     
     // Handy little function to expose the keyframes to the client
-    storage.getStream(req.params.ObjectKey, 'cos-frames').pipe(res);
+    storage.getStream(req.params.ObjectKey, process.env.COS_KEYFRAMES_BUCKET_NAME).pipe(res);
 
 });
 
