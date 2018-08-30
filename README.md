@@ -128,6 +128,16 @@ Now that we have our bucket for storing the files we want to analyse, we're goin
 
 Repeat steps 1 - 4 of the previous instructions to create the new bucket, but give it a different name this time around. We're not going to directly upload any files to this bucket, our application will do that for us when we run it.
 
+## Quick Start
+
+If you don't want to copy and paste all of the code below, but just want to play with the application, download the code and run the following inside the '/complete' folder. This a complete, functioning version of the application.
+
+1. run `npm install`
+2. Set up the environment variables as described at the end of this document
+3. Run `npm start`
+4. View the application at http://localhost:3000
+
+
 ## Building our Application
 
 We now have all of the services that we need to run our analysis application. So, it's time to build it!
