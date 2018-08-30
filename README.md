@@ -47,7 +47,8 @@ _**Before proceeding any further, please log in to your IBM Cloud account, it'll
 3. Scroll down and check that the pricing plan you've selected is 'Lite'.
 4. Click 'Create'.
 
-### CloudantDB
+### CloudantDB
+
 #### Creating an instance
 
 1. Create a Speech to Text instance by first clicking [here](https://console.bluemix.net/catalog/services/cloudant)
@@ -59,7 +60,7 @@ _**Before proceeding any further, please log in to your IBM Cloud account, it'll
 
 #### Creating our tables
 
-For our application we require 3 tables - 'index', 'frames', and 'transcripts'. Follow and repeat the next set of instructions to create the needed databases.
+For our application we require 3 databases - 'index', 'frames', and 'transcripts'. Follow and repeat the next set of instructions to create the needed databases.
 
 1. On the left-hand side of your Cloudant DB dashboard, there is a button which looks like three stacked pancakes. Click it.
 2. At the top right of your Cloudant DB dashboard, click 'Create Database'.
@@ -143,7 +144,9 @@ Our application is made up of two views _'analyse'_ and _'search'_. The _'analys
 In this demo application, we have all of the routes set up to deliver our application, but none of the logic for populating our application with content or search capabilites, so we'll do that now.
 
 1. Open this folder in your favourite IDE for editing and open the file `routes/index.js`.
+
 2. In here, you will see all of the routes we have defined for our application. We're going to edit the `GET /analyse`. Look for the code block that has `// GET ANALYSE ROUTE` in it and delete the line reading `res.end()` just after it. We'll be copy and pasting our code in this space for the next little while.
+
 3. Copy and paste the following code on the line after `GET ANALYSE ROUTE`
 ```javaScript
 storage.list(process.env.COS_MEDIA_ARCHIVE_BUCKET_NAME)
@@ -154,6 +157,7 @@ storage.list(process.env.COS_MEDIA_ARCHIVE_BUCKET_NAME)
 ;
 ```
 This will access our cloud object storage and get a list of all of the files in our media archive.
+
 4. Next, we want to check whether or not we have any record of this file in our CloudantDB 'index' database. Copy and paste the following code just after the line that reads `CODE BLOCK 1`
 ```javascript
 database.query({
@@ -168,6 +172,7 @@ database.query({
     })
 ;
 ```
+
 5. Once we have those records, we also want to check whether or not these files have been previously transcribed. We can do that by running another query, but this time against our Cloudant DB 'transcript' database. Copy and paste the following code onto the line just after `// CODE BLOCK 2`.
 ```javascript
 return database.query({
@@ -181,6 +186,7 @@ return database.query({
     })    
 ;
 ```
+
 6. We now have records of whether or not our file has ever been processed by our server before, and whether or not they've been transcribed. Now we're going to shape that information so that we can use it to render our 'analyse' view. Copy and paste the following code on the line that reads just after `// CODE BLOCK 3`
 ```javascript
 const itemInfo = data.Contents.map(item => {
@@ -206,8 +212,10 @@ res.render('analyse', {
     item : itemInfo
 });
 ```
-7. We now have all of the code that we need to view our `/analyse` route! But we also need a little bit of JavaScript to make it behave the way we'd like (triggering analysis processes on demand). Find the file `/views/analyse.hbs` and open it for editing.
-8. Copy and paste the following code just beneath the line that reads `// CODE BLOCK 1` (in between the `<script>` tags).
+
+7. We now have all of the code that we need to view our `/analyse` route! But we also need a little bit of JavaScript to make it behave the way we'd like (triggering analysis processes on demand).
+
+8. Find the file `/views/analyse.hbs` and open it for editing. Copy and paste the following code just beneath the line that reads `// CODE BLOCK 1` (in between the `<script>` tags).
 ```javascript
 (function(){
 
@@ -287,7 +295,9 @@ This code will bind an event listener to the _Analyse_ buttons in the table and 
 So, now we have the code for displaying all of the objects that we can analysis, and all of the code we need to trigger an analysis. Next up, we need the code for actually performing the analysis.
 
 1. Open up the file `/routes/index.js` for editing again.
-2. Find the line that reads `// POST ANALYSE ROUTE` and delete the line that reads `res.end();` just after it.
+
+2. Find the line that reads `// POST ANALYSE ROUTE` and delete the line that reads `res.end()` just after it.
+
 3. On the line just after `// POST ANALYSE ROUTE` copy and paste the following code.
 ```javascript
 const objectName = req.params.OBJECT_NAME;
@@ -310,6 +320,7 @@ storage.check(objectName, process.env.COS_MEDIA_ARCHIVE_BUCKET_NAME)
 ;
 ```
 This will check that any file that we want to analyse actually exists before we try to analyse it.
+
 4. Copy and paste the following code just after the line that reads `// CODE BLOCK 4`
 ```javascript
 database.query({
@@ -386,6 +397,7 @@ database.query({
 ;
 ```
 This code checks our 'index' database for a document that tells us whether or not we've analysed the file before. If a document is found, we update the document to read that we're now reanalysing the audio and keyframes of the media object. If not, we create a new object that contains the same information for future analysis.
+
 5. Before we start any analysis, we want to clean up any existing data about the media file so that we can surface only the most recent results in any search. After the line that reads `// CODE BLOCK 5` copy and paste the following code:
 ```javascript
 return Promise.all( [ database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'frames'), database.query( { "selector": { "parent": { "$eq": document.uuid } } }, 'transcripts') ]  )
@@ -457,6 +469,7 @@ return Promise.all( [ database.query( { "selector": { "parent": { "$eq": documen
 ;
 ```
 This code will find every transcript and keyframe that belongs to the selected media file and will delete both the objects from our cloud storage and the records from our database. This gives us a nice clean slate to work with.
+
 6. Now that we've cleaned everything up, it's time to start analysing things. First, we'll add a record to our 'index' database saying that we're about to analyse the media object, and then we'll grab the object from storage for analysis. Copy and paste the following code on the line just after `// CODE BLOCK 6`
 ```javascript
 return database.add(document, 'index')
@@ -481,6 +494,7 @@ return database.add(document, 'index')
     })
 ;
 ```
+
 7. In this part of the code, we're going to start two of the analysis processes - the keyframe extraction and classification, and the audio extraction and transcription. First, we'll add the code for the keyframe analysis and classification. Copy and paste the following code just after `// CODE BLOCK 7`
 ```javascript
 const frameClassification = analyse.frames(data.Body)
@@ -559,7 +573,7 @@ In this block of code, we work through every identified and classified keyframe,
 
 8. Now that we have the code for extracting, analysing and storing our keyframes, it's time for the code that will extract, analyse, and store the transcripts for our media files. On the line just after `// CODE BLOCK 8`, copy and paste the following code:
 ```javascript
-analysis.push(frameClassification);
+
                                                 
 const audioTranscription = analyse.audio(data.Body)
     .then(transcriptionData => {
@@ -610,6 +624,7 @@ Right! We can now analyse media objects. Hurrah! So let's make a simple search e
 We've already got everything we need to get started, so we just need a little more code.
 
 1. Still in the `/routes/index.js` file, find the line that starts with `// GET SEARCH ROUTE` and delete the line that read `res.end()` just after it.
+
 2. Copy and paste the following line just after the line that reads `// GET SEARCH ROUTE`
 ```javascript
 debug(req.body);
@@ -627,6 +642,7 @@ if(req.body.searchTerm === "" || !req.body.searchTerm){
 }
 ```
 Here, we're just making sure that we're actually getting something to search for before we try to query our database. If there's no search query we just reject the request.
+
 3. Once we get something that we can actually look for, we'll put together the database queries to surface some results (if there are any) to the user. Copy and paste the following code after the line that reads `// CODE BLOCK 9`
 ```javascript
 const phrase = req.body.searchTerm.toLowerCase();
@@ -656,6 +672,7 @@ const transcriptSearch = database.query({
 // CODE BLOCK 10
 
 ```
+
 4. Once we have those queries ready to go, we'll fire them off to the database and wait for the results. Copy and paste the following code after the line that reads `// CODE BLOCK 10`.
 ```javascript
 Promise.all( [ keyframeSearch, transcriptSearch ] )
@@ -675,6 +692,7 @@ Promise.all( [ keyframeSearch, transcriptSearch ] )
     })
 ;
 ```
+
 5. It'll take a few seconds for the requests for both the transcripts and the keyframes results to return. Once we have both sets of results, we'll put them to work. Copy and paste the following code just after the line that reads `// CODE BLOCK 11`
 ```javascript
 const uniqueParents = {};
@@ -724,6 +742,7 @@ searchResults[1].forEach(result => {
 
 ```
 In this block of code, we're checking which frames (if any) belong to which videos and creating an object `uniqueParents` which we add all of the results that match the search terms. We then parse through the transcriptions looking for a match.
+
 6. Once that's done, we just need to find out the file names for the media files that the classifications belong to. We'll do one final query to the 'index' database before sending the results back to the client. Copy and paste the following code beneath the line that reads `// CODE BLOCK 12`
 ```javascript
 return database.query({
@@ -750,6 +769,7 @@ return database.query({
 ;
 ```
 Et Voila! We have a simple search engine that can return results for the classifications of keyframes, and any transcribed content for a given search query.
+
 7. Finally, we need to put together a little bit of JavaScript for a search form to work in our app. Open the file `/views/index.hbs` and copy and paste the following code on the line just after `// CODE BLOCK 13`
 ```javascript
 
@@ -934,6 +954,7 @@ In order to run the application, we first need to set up some environment variab
 ### Setting up variables locally
 
 1. In the root of your project folder (the folder with the app.js file in it) create a new file called `.env`.
+
 2. Copy and paste the following block of text into your newly created `.env` file and save it.
 
 ```
@@ -959,7 +980,7 @@ STT_URL=
 
 ### Getting the values for your environment variables
 
-#### Cloud Object Storage
+#### Cloud Object Storage
 
 Variables required:
 1. COS_ENDPOINT
